@@ -4,12 +4,17 @@ import threading
 import configparser
 import logging
 
-#First Party Modules
-
 #Main Variables
+
 
 #Logging
 
-#GUI
-
 #Server Initalisation
+
+#VOIP
+
+#Text
+
+#------Feature creep--------
+#Encryption
+#Administration
