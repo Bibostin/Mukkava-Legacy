@@ -1,0 +1,34 @@
+import socket
+import threading
+
+nickname = input("Choose your nickname:")
+nicknames = []
+text_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+text_client.connect(('127.0.0.1', 64738))
+
+
+def text_receive():
+    while True:
+        try:
+            message = text_client.recv(1024).decode('ascii')
+            if message == 'NICK':
+                text_client.send(nickname.encode('ascii'))
+            else:
+                print(message)
+        except:
+            print('Error occurred, closing connection')
+            text_client.close()
+            break
+
+
+def text_write():
+    while True:
+        message = '{}: {}'.format(nickname, input(''))
+        text_client.send(message.encode('ascii'))
+
+
+text_receive_thread = threading.Thread(target=text_receive())
+text_receive_thread.start()
+
+text_write_thread = threading.Thread(target=text_write())
+text_write_thread.start()
