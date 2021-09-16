@@ -2,15 +2,14 @@
 import socket
 import threading
 import configparser
-import gi; gi.require_version("Gtk", "4.0"); from gi.repository import Gt
+import logging
+
 #First Party Modules
 
-#Main Variable Setup
+#Main Variables
 
-#GUI Setup
-window = Gtk.Window()
-win.connect("destroy", gtk.main_quit)
-win.show_all()
-gtk.main()
+#Logging
+
+#GUI
 
 #Server Initalisation
