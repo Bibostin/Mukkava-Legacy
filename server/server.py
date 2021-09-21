@@ -1,34 +1,32 @@
-#Third Party Libraries / Toolkits
+#Library-Setup
 import socket
 import threading
 import configparser
-import logging
 import datetime
-#first party modules
-import error_checking
+import logging
 
-
-#sanity checks prior to starting server
-
-
-#Main Variables
 logging.basicConfig(
-    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-    datefmt='%m-%d %H:%M',filename='logs/log-{}'.encoding(datetime.datetime.now()),
-    encoding='utf-8', level='logging.DEBUG'
+    format='%(asctime)s:%(levelname)s:%(message)s',
+    datefmt='%m-%d %H:%M',
+    filename=f'logs/log-{datetime.datetime.now()}',
+    level='DEBUG',
 )
+config = configparser.ConfigParser(); 
+config.server = config.read('serverconf.ini')  #Contains server configuration.
+#config.blacklist = config.read('blacklist.txt')#File used to store banned IP's.
+#config.greylist = config.read('greylist.txt')  #File used to tempoarily store IP's that spam connections.
 
-config = configparser.ConfigParser()
-config.read('server_conf.ini')
-
-server_address = socket.gethostbyname(socket.gethostname())
-port = ""
-password = ""
+#Main-Vars
+serveraddress = socket.gethostbyname(socket.gethostname())
+servername = config.get('basic', 'servername')
+voip_port = int(config.get('basic', 'voip_port'))
+control_port = int(config.get('basic', 'control_port'))
+password = config.get('basic', 'password')
+whitelist = config.get('basic', 'whitelist')
 
 Client_sockets = []
 Client_addresses = []
 Client_objects = []
-
 class Client_class:
     def __init__(self, nickname, deafened, muted): #self "represents" the individual object instance of a class
             self.nickname = nickname
@@ -36,20 +34,20 @@ class Client_class:
             self.muted = muted
             self.priority_speaker = False
 
+#Server Initialisation
 
-#--------------------------------------------------------------
+logging.info(f'Starting {servername} on {serveraddress}:{voip_port} Server password is {password}')
+
 text_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-text_server.bind((server_address, port))
+text_server.bind((serveraddress, control_port))
 text_server.listen()
 
 voip_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-voip_server.bind((server_address, port))
-voip_server.listen()
+voip_server.bind((serveraddress, voip_port))
+voip_server.listen()  #UDP DOESNT "LISTEN" THIS NEEDS TO BE CHANGED FOR EITHER AN APPROPRIATE METHOD OR USERMADE FUNC CALL.
 
 
-#Logging
 
-#Server Initialisation
 
 #VOIP
 
@@ -58,6 +56,7 @@ def text_broadcast():
     pass
 
 def text_client_handler():
+    pass
     while True:
         client_socket, address = text_server.accept()
         logging.debug("client connected from {}".format(address))
