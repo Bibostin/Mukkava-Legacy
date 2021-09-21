@@ -36,7 +36,7 @@ class Client_class:
 
 #Server Initialisation
 
-logging.info(f'Starting {servername} on {serveraddress}:{voip_port} Server password is {password}')
+logging.info(f' Starting a server with name {servername} on {serveraddress}:{voip_port} Server password is {password}')
 
 text_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 text_server.bind((serveraddress, control_port))
