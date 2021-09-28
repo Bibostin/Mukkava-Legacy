@@ -39,11 +39,13 @@ voip_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 voip_server.bind((serveraddress, config["voip_port"]))
 logging.info(f' UDP VOIP socket started, listening on port {config["voip_port"]}')
 
-#FILE IO //TO DO: INCLUDE LIMITS ON ACCESS TO FILES
+
+#FILE IO //TO DO: INCLUDE LIMITS ON ACCESS TO FILES / CHECKS FOR FILE PRESENCE / VALID IP FORMAT
 def file_operation(list, operation, ip): #Handles the required file IO for the whitelist and blacklist (and hopefully greylist!)
     if operation == "check": #check if there is an occurance of a given IP in whitelist or blacklist and give feedback of this.
         input_file = open(f'{list}.txt', 'r')
-        if ip in input_file.readlines():
+        parsed_file = (input_file.read().splitlines())
+        if ip in parsed_file:
             input_file.close()
             return True
         else:
@@ -56,32 +58,34 @@ def file_operation(list, operation, ip): #Handles the required file IO for the w
             input_file.write('\n')
             input_file.write(f'{ip}')
             input_file.close()
-        else: logging.debug('attempted to add an allready present IP.')
+            logging.debug(f'Successfully added {ip} to {list}.')
+        else: logging.error(f'attempted to add an allready present IP, {ip} to {list}.')
 
     elif operation == "remove": #Remove a given IP from the whitelist or blacklist by checking
         if file_operation(list, "check", ip) is True:
             input_file = open(f'{list}.txt', 'r')
-            line_list = input_file.readlines()
+            parsed_file = input_file.read().splitlines()
             input_file.close()
-            del line_list[line_list.index(ip)]
+            del parsed_file[parsed_file.index(ip)]
             output_file = open(f'{list}.txt', 'w+')
-            for lines in line_list:
+            for lines in parsed_file:
                 output_file.write(lines)
             output_file.close()
-        else: logging.debug('attempted to remove a non present IP.')
-    else: logging.debug(f'Invalid use of file_operation function, with params: {list} {operation} {ip}')
+            logging.debug(f'Successfully removed {ip} from {list}.')
+        else: logging.error(f'Attempted to remove a non present IP, {ip} from {list}.')
+    else: logging.error(f'Invalid use of file_operation function, with params: {list} {operation} {ip}')
 
 # VOIP
 
 # TEXT AND CONTROL
-def text_unicast(client_socket, message): #Send a message directly to a specific client (e.g. command feedback)
+def text_unicast(client_socket, message): #Send a message directly to a specific client (e.g. command feedback, pokes.)
     client_socket.send(message)
 
 def text_multicast(client_socket_list, message): #Send a message to a list of sockets not specified by the Client_sockets array.
     for client_socket in client_socket_list:
         client_socket.send(message)
 
-def text_broadcast(message): #Broadcast message to all established sockets the server knows (I.E. for Chat messages)
+def text_broadcast(message): #Broadcast message to all established sockets the server knows (I.E. for public chat messages)
     for client_socket in client_sockets:
         client_socket.send(message)
 

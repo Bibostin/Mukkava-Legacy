@@ -1,10 +1,10 @@
 #Server must be restarted for changes made to take effect!
 servername = "example-server"
-password = "test"
+password = "example"
 voip_port = 9978
 control_port = 10022
 whitelist = false
-server_greeting_message = "Welcome to this test server, use / for command prefixes"
+server_greeting_message = "Welcome to this example server, use / for command prefixes"
 text_command_prefix = "/"
 
 #NOT YET IN USE WILL NOT AFFECT OPERATION
