@@ -3,8 +3,9 @@ servername = "example-server"
 password = "example"
 voip_port = 9978
 control_port = 10022
-whitelist = false
-server_greeting_message = "Welcome to this example server, use / for command prefixes"
+whitelist = true
+chatlog = true
+greeting_message = "Welcome to this example server, use / for command prefixes"
 text_command_prefix = "/"
 
 #NOT YET IN USE WILL NOT AFFECT OPERATION
