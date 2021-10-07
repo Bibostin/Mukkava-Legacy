@@ -1,21 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="257e11cc-1e87-4ed9-bcb1-669e8279f556" name="Changes" comment="File IO now fully functional">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+    <list default="true" id="257e11cc-1e87-4ed9-bcb1-669e8279f556" name="Changes" comment="Majority of functions consolidated into method Objects, TODOs added for large amount of system">
+      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes/shelved.patch" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes1.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes1/shelved.patch" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes2.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes2/shelved.patch" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes3.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes3/shelved.patch" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes4.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes4/shelved.patch" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes5.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes5/shelved.patch" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes8.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes8/log-2021-09-28 19:42:54.289328" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes8/shelved.patch" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/unamed-communication-software.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/unamed-communication-software.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/client.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/client.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/client_config.toml" beforeDir="false" afterPath="$PROJECT_DIR$/client/client_config.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/blacklist.txt" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/greylist.txt" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/server/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/server.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/server_conf.ini" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/server_config.toml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/serverconf.ini" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/whitelist.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/testing/client.py.old" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/testing/loggingtest.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/testing/server.py.old" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/server_config.toml" beforeDir="false" afterPath="$PROJECT_DIR$/server/server_config.toml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,7 +57,13 @@
     <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../learning-projs/py-vars-datatypes" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/server/server_config.toml" />
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/testing" />
+      <recent name="$PROJECT_DIR$/server" />
+    </key>
   </component>
   <component name="RunManager" selected="Python.server">
     <configuration name="client" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
@@ -206,7 +217,21 @@
       <option name="project" value="LOCAL" />
       <updated>1632255962422</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Majority of functions consolidated into method Objects, TODOs added for large amount of system">
+      <created>1633592829207</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1633592829208</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Majority of functions consolidated into method Objects, TODOs added for large amount of system">
+      <created>1633592963501</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1633592963501</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -224,7 +249,8 @@
   <component name="VcsManagerConfiguration">
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
     <MESSAGE value="test" />
-    <option name="LAST_COMMIT_MESSAGE" value="test" />
+    <MESSAGE value="Majority of functions consolidated into method Objects, TODOs added for large amount of system" />
+    <option name="LAST_COMMIT_MESSAGE" value="Majority of functions consolidated into method Objects, TODOs added for large amount of system" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

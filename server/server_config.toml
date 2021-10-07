@@ -1,13 +1,15 @@
-#Server must be restarted for changes made to take effect!
-servername = "example-server"
-password = "example"
-voip_port = 9978
-control_port = 10022
-whitelist = true
-chatlog = true
-greeting_message = "Welcome to this example server, use / for command prefixes"
-text_command_prefix = "/"
+# SERVER MUST BE RESTARTED FOR CHANGES MADE HERE TO TAKE AFFECT!
+# SERVER MUST BE RESTARTED FOR CHANGES MADE HERE TO TAKE AFFECT!
+servername = "example-server"  #Defines the name the server will advertise to clients
+password = ""  #Passphrase required to acccess the server, leave blank to not use a password.
+voip_port = 9978  #the port the server will use for its UDP voip socket
+control_port = 10022  #the port the server will use for its TCP control / Text socket
+whitelist = true  #Enable whitelisting
+greeting_message = "Welcome to this example server, use / for command prefixes"  #message server will send to users upon connection.
 
-#NOT YET IN USE WILL NOT AFFECT OPERATION
+
+#NOT YET IN USE WILL NOT AFFECT OPERATION (this section is reserved for potential config items)
 #greylist = false
 #greylist_ttl_increment = 10
+#chatlog = false  #Enable logging chat to a file
+#text_command_prefix = "/"

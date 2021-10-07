@@ -1,17 +1,21 @@
-# utf-8 is better then ascii
-# toml used initially but switched to json
+# Project methodology
+    # Pep8/ others compliance (for the most part) helps with writing good code (my only personal exclusion is long lines as this triggers mostly on comments, this one case in point!)
+    # TODO: Code smelling process should be implemented
+# design structure
+    # utf-8 is better then ascii
+    # debated switching toml for json but json doesn't allow for comments and nor is it the intended design goal of json.
+    # TODO: Singleton classes and staticMethods VS __init__.py and modules (https://stackoverflow.com/questions/38758668/grouping-functions-by-using-classes-in-python)
 
 # Library setup
 import socket  # tcp / udp sockets used for data transfer between client and server
 import threading  # Used for instancing functions (client_handlers, message_handlers.)
-import toml  # Provides server config in a simple format. TODO: potentially replace with JSON
-import json  # Serialising control messages
+import toml  # Provides server config in a simple format. https://github.com/uiri/toml
+import json  # Serialising control messages https://docs.python.org/3.4/library/json.html#json-to-py-table
 import logging  # Logging server operation / streaming to stdout
 import datetime  # used for appending exact date / start time to to log filenames
 
 # Main vars
 config = toml.load('server_config.toml')  # Dictionary pulled from server_config.toml
-config_json = json.dumps('server_config.json')  # dictionary pulled from server config.json
 voip_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # IPv4 UDP Socket for transmitting opus voice packets
 text_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # IPv4 TCP Socket for text and command packets
 serveraddress = socket.gethostbyname(socket.gethostname())  # TODO: try fetch ip from config, then default to this
@@ -26,7 +30,8 @@ logging.basicConfig(
     format='%(asctime)s:%(levelname)s:  %(message)s', datefmt='%m-%d %H:%M',
     filename=f'logs/log-{datetime.datetime.now()}', level='DEBUG', )
 
-#Object classes
+
+# Object classes
 class ClientClass:
     def __init__(self, nickname, deafened, muted):  # self "represents" the individual object instance of a class
         self.nickname = nickname
@@ -35,7 +40,7 @@ class ClientClass:
         self.priority_speaker = False
 
 
-#Method Classes
+# Method Classes
 class Generic:
 
     # TODO: file presence / perm checks, address input validation
@@ -105,7 +110,7 @@ class Text:
 
     # TODO: Add password check
     @staticmethod
-    def client_handler():  # Handles collecting inbound clients, and sets them up with a text_message_handler thread
+    def client_handler():  # Collects inbound text/control clients, and sets them up with a text.message_handler thread
         while True:  # While thread is active, continuously check for new clients, check for presence in whitelist / blacklist, setup encryption, check password, then handoff to a Text.message_handler thread for input message processing.
             client_socket, address = text_server.accept()  # pulls next client in from a fifo buffer of inbound socket requests.
             if config['whitelist'] is True:
@@ -140,8 +145,7 @@ class Text:
             thread.start()
 
     @staticmethod
-    def message_handler(
-            client_socket):  # Parse inbound client messages and determines how to distribute it to other clients / additional actions to take
+    def message_handler(client_socket):  # Parse inbound client messages and determines how to distribute it to other clients / Server actions to take.
         while True:
             try:
                 message = client_socket.recv(4096)
@@ -158,7 +162,7 @@ class Text:
                 break
 
     @staticmethod
-    def start():
+    def start():  # Start the Control socket, and initialise a threaded text.client_handler to handle text messages using said socket.
         try:
             text_server.bind((serveraddress, config['control_port']))
             text_server.listen()
@@ -180,15 +184,15 @@ class Text:
 class Voip:
 
     @staticmethod
-    def client_handler():
+    def client_handler():  # Collects inbound VOIP clients, and sets them up with a Voip.message_handler thread
         pass
 
     @staticmethod
-    def message_handler():
+    def message_handler():  # collect client voip streams, and forward them onto other users based on the status of the ClientClass matrix
         pass
 
     @staticmethod
-    def start():
+    def start():  # Start the VOIP socket and initialise a threaded voip.client_handler to handle voip using said socket.
         try:
             voip_server.bind((serveraddress, config["voip_port"]))
             logging.info(f'UDP VOIP socket bound, listening on port {config["voip_port"]}')
@@ -206,7 +210,6 @@ class Voip:
 
 
 # Server Initialisation
-logging.info(
-    f'Starting a server with name {config["servername"]} on {serveraddress} Server password is {config["password"]}')
+logging.info(f'Starting a server with name {config["servername"]} on {serveraddress} Server password is {config["password"]}')
 Text.start()
 Voip.start()
