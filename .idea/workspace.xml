@@ -1,23 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="257e11cc-1e87-4ed9-bcb1-669e8279f556" name="Changes" comment="Majority of functions consolidated into method Objects, TODOs added for large amount of system">
-      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes/shelved.patch" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes1.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes1/shelved.patch" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes2.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes2/shelved.patch" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes3.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes3/shelved.patch" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes4.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes4/shelved.patch" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes5.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes5/shelved.patch" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes8.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes8/log-2021-09-28 19:42:54.289328" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/shelf/Changes8/shelved.patch" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/unamed-communication-software.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/unamed-communication-software.iml" afterDir="false" />
+    <list default="true" id="257e11cc-1e87-4ed9-bcb1-669e8279f556" name="Changes" comment="Update to TODOS">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/server.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/server_config.toml" beforeDir="false" afterPath="$PROJECT_DIR$/server/server_config.toml" afterDir="false" />
@@ -231,7 +215,14 @@
       <option name="project" value="LOCAL" />
       <updated>1633592963501</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Update to TODOS">
+      <created>1633601313122</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1633601313122</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -250,7 +241,8 @@
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
     <MESSAGE value="test" />
     <MESSAGE value="Majority of functions consolidated into method Objects, TODOs added for large amount of system" />
-    <option name="LAST_COMMIT_MESSAGE" value="Majority of functions consolidated into method Objects, TODOs added for large amount of system" />
+    <MESSAGE value="Update to TODOS" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update to TODOS" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

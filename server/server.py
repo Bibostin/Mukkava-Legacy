@@ -1,33 +1,39 @@
-# Project methodology
-    # Pep8/ others compliance (for the most part) helps with writing good code (my only personal exclusion is long lines as this triggers mostly on comments, this one case in point!)
-    # TODO: Code smelling process should be implemented
-# design structure
-    # utf-8 is better then ascii
-    # debated switching toml for json but json doesn't allow for comments and nor is it the intended design goal of json.
-    # TODO: Singleton classes and staticMethods VS __init__.py and modules (https://stackoverflow.com/questions/38758668/grouping-functions-by-using-classes-in-python)
+# PROJECT METHODOLOGY
+# Pep8/ others compliance (for the most part) helps with writing good code (my only personal exclusion is long lines as this triggers mostly on comments, this one case in point!)
+# TODO: Code smelling process should be implemented
+
+# DESIGN STRUCTURE
+# utf-8 is better then ascii
+# debated switching toml for json but json doesn't allow for comments and nor is it the intended design goal of json.
+# TODO: Singleton classes and staticMethods VS __init__.py and modules (https://stackoverflow.com/questions/38758668/grouping-functions-by-using-classes-in-python)
 
 # Library setup
 import socket  # tcp / udp sockets used for data transfer between client and server
+import sys
 import threading  # Used for instancing functions (client_handlers, message_handlers.)
 import toml  # Provides server config in a simple format. https://github.com/uiri/toml
 import json  # Serialising control messages https://docs.python.org/3.4/library/json.html#json-to-py-table
 import logging  # Logging server operation / streaming to stdout
 import datetime  # used for appending exact date / start time to to log filenames
 
+
 # Main vars
 config = toml.load('server_config.toml')  # Dictionary pulled from server_config.toml
-voip_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # IPv4 UDP Socket for transmitting opus voice packets
-text_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # IPv4 TCP Socket for text and command packets
 serveraddress = socket.gethostbyname(socket.gethostname())  # TODO: try fetch ip from config, then default to this
 file_semaphore = threading.BoundedSemaphore(1)  # These restrict usage of files by threads to 1 at a time.
+
+voip_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # IPv4 UDP Socket for transmitting opus voice packets
+text_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # IPv4 TCP Socket for text and command packets
+
 client_sockets = []  # TODO: decide if this is necessary or if a better approach can be used
 client_addresses = []  # TODO: decide if this is necessary or if a better approach can be used
-client_objects = []  # A List used for macromanaging client_Class objects outside of
+client_objects = []  # A List used for macromanaging client_Class objects outside of the nominal client handler threads
+
 
 # Setup file logging
 # TODO: add separate stream output to stdout to provide logging output on server terminal.
 logging.basicConfig(
-    format='%(asctime)s:%(levelname)s:  %(message)s', datefmt='%m-%d %H:%M',
+    format='%(asctime)s:%(levelname)s:%(threadName)s:  %(message)s', datefmt='%m-%d %H:%M',
     filename=f'logs/log-{datetime.datetime.now()}', level='DEBUG', )
 
 
@@ -41,9 +47,9 @@ class ClientClass:
 
 
 # Method Classes
-class Generic:
+class Service:
 
-    # TODO: file presence / perm checks, address input validation
+    # TODO: file presence / perm checks, input validation
     @staticmethod
     def file_operation(listname, operation, ip):  # Handles the required file IO for the whitelist and blacklist
 
@@ -51,9 +57,9 @@ class Generic:
             file_semaphore.acquire()
             input_file = open(f'{listname}.txt', 'r')
             parsed_file = (input_file.read().splitlines())
+            input_file.close()
+            file_semaphore.release()
             if ip in parsed_file:
-                input_file.close()
-                file_semaphore.release()
                 return True
             else:
                 input_file.close()
@@ -61,7 +67,7 @@ class Generic:
                 return False
 
         elif operation == "append":  # append a given IP to the whitelist or blacklist
-            if Generic.file_operation(listname, "check", ip) is False:
+            if Service.file_operation(listname, "check", ip) is False:
                 file_semaphore.acquire()
                 input_file = open(f'{listname}.txt', 'a')
                 input_file.write('\n')
@@ -73,7 +79,7 @@ class Generic:
                 logging.error(f'attempted to add an already present IP, {ip} to {listname}.')
 
         elif operation == "remove":  # Remove a given IP from the whitelist or blacklist by checking
-            if Generic.file_operation(listname, "check", ip) is True:
+            if Service.file_operation(listname, "check", ip) is True:
                 file_semaphore.acquire()
                 input_file = open(f'{listname}.txt', 'r')
                 parsed_file = input_file.read().splitlines()
@@ -95,18 +101,45 @@ class Generic:
     def encryption():
         pass
 
+    @staticmethod
+    def start():  # Separately start the VOIP and Text-control sockets then start the previously setup handler thread for each.
+        voip_handler_thread = threading.Thread(target=Voip.client_handler())
+        text_handler_thread = threading.Thread(target=Text.client_handler())
+        try:
+            voip_server.bind((serveraddress, config["voip_port"]))
+            logging.info(f'UDP VOIP socket bound, listening on port {config["voip_port"]}')
+            text_server.bind((serveraddress, config["control_port"]))
+            logging.info(f'TCP  socket bound, listening on port {config["control_port"]}')
+        except:
+            logging.error(f'Failed to bind socket to\"{serveraddress}\" verify there isn\'t already a program running on that IP that uses :{config["control_port"]} or :{config["voip_port"]}. Exiting.')
+        try:
+            text_server.listen()
+            text_handler_thread.start()
+            voip_handler_thread.start()
+        except:
+            logging.error(f'Program error! failed to start voip or text client handler! Exiting.')
+
+
+    @staticmethod
+    def stop():
+        file_semaphore.acquire()
+        Text.broadcast('Server shutting down!')
+        logging.error(f'Server shutting down!')
+        text_server.close()
+        voip_server.close()
+        sys.exit(1)
+
 
 class Text:
 
     @staticmethod
     def unicast(client_socket, message):  # Send a message directly to a specific client (DM, Command feedback, etc.)
-        client_socket.send(message.encode('utf-8'))
+        client_socket.send(f'{message}'.encode('utf-8')) #b'' converts our message string (ascii) into a byte (nominally utf-8) which has greater unicode support.
 
     @staticmethod
-    def broadcast(
-            message):  # Broadcast message to all established sockets the server knows (I.E. for public chat messages)
+    def broadcast(message):  # Broadcast message to all established sockets the server knows (I.E. for public chat messages)
         for client_socket in client_sockets:
-            client_socket.send(message.encode('utf-8'))
+            client_socket.send(f'{message}'.encode('utf-8'))
 
     # TODO: Add password check
     @staticmethod
@@ -114,13 +147,13 @@ class Text:
         while True:  # While thread is active, continuously check for new clients, check for presence in whitelist / blacklist, setup encryption, check password, then handoff to a Text.message_handler thread for input message processing.
             client_socket, address = text_server.accept()  # pulls next client in from a fifo buffer of inbound socket requests.
             if config['whitelist'] is True:
-                if Generic.file_operation('whitelist', 'check', address) is False:
+                if Service.file_operation('whitelist', 'check', address) is False:
                     Text.unicast(client_socket, "You are not whitelisted for this server.")
                     client_socket.close()
                     logging.debug(f"Connection attempt from {address}, failed whitelist.")
                     continue
 
-            if Generic.file_operation('blacklist', 'check', address) is True:
+            if Service.file_operation('blacklist', 'check', address) is True:
                 Text.unicast(client_socket, "You are banned from this server.")
                 client_socket.close()
                 logging.debug(f"Connection attempt from {address}, failed blacklist.")
@@ -154,31 +187,11 @@ class Text:
                 index = client_sockets.index(client_socket)
                 client_socket.close()
                 Text.broadcast(f'{client_objects[index].nickname} has disconnected.')
-                logging.debug(
-                    f'{client_addresses[index]}  with nickname {client_objects[index].nickname} has disconnected')
+                logging.debug(f'{client_addresses[index]}  with nickname {client_objects[index].nickname} has disconnected')
 
                 client_sockets.remove(client_socket)
                 client_objects.remove((client_objects[index]))
                 break
-
-    @staticmethod
-    def start():  # Start the Control socket, and initialise a threaded text.client_handler to handle text messages using said socket.
-        try:
-            text_server.bind((serveraddress, config['control_port']))
-            text_server.listen()
-            logging.info(f'TCP Text and control socket bound, listening on port {config["control_port"]}')
-            try:
-                text_client_handler_thread = threading.Thread(target=Text.client_handler())
-                text_client_handler_thread.start()
-            except:
-                text_server.close()
-                logging.error('Failed to start text handler! (PROGRAM ERROR!)')
-                exit(1)
-        except:
-            text_server.close()
-            logging.error(
-                f'Failed to bind text socket to {config["control_port"]} on {serveraddress}. Check for existing / conflicting processes.')
-            exit(1)
 
 
 class Voip:
@@ -191,25 +204,7 @@ class Voip:
     def message_handler():  # collect client voip streams, and forward them onto other users based on the status of the ClientClass matrix
         pass
 
-    @staticmethod
-    def start():  # Start the VOIP socket and initialise a threaded voip.client_handler to handle voip using said socket.
-        try:
-            voip_server.bind((serveraddress, config["voip_port"]))
-            logging.info(f'UDP VOIP socket bound, listening on port {config["voip_port"]}')
-            try:
-                voip_handler_thread = threading.Thread(target=Voip.client_handler())
-                voip_handler_thread.start()
-            except:
-                voip_server.close()
-                logging.error('Failed to start VOIP Handler! (PROGRAM ERROR!)')
-                exit(1)
-        except:
-            voip_server.close()
-            logging.error(f'Failed to bind VOIP Socket to {config["voip_port"]} on {serveraddress}. Check for existing / conflicting processes.')
-            exit(1)
-
 
 # Server Initialisation
-logging.info(f'Starting a server with name {config["servername"]} on {serveraddress} Server password is {config["password"]}')
-Text.start()
-Voip.start()
+logging.info(f'attempting to start a server with name {config["servername"]} on {serveraddress} Server password is \"{config["password"]}\"')
+Service.start()

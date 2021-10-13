@@ -1,5 +1,4 @@
 # SERVER MUST BE RESTARTED FOR CHANGES MADE HERE TO TAKE AFFECT!
-# SERVER MUST BE RESTARTED FOR CHANGES MADE HERE TO TAKE AFFECT!
 servername = "example-server"  #Defines the name the server will advertise to clients
 password = ""  #Passphrase required to acccess the server, leave blank to not use a password.
 voip_port = 9978  #the port the server will use for its UDP voip socket
