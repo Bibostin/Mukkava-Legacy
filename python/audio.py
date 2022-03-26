@@ -37,5 +37,3 @@ def PlayAudiosStream(filepath):
     while source.get_state() == AL_PLAYING:
         time.sleep(1)
     oalQuit()
-
-openal.audio.Sound
