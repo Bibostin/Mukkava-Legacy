@@ -1,0 +1,1 @@
+file for porting library requirements, dont upload a venv to git, fill and upload this file with pip freeze then install with pip -r requirements.txt
