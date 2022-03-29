@@ -4,7 +4,6 @@ ffmpeg-python (https://github.com/kkroening/ffmpeg-python) has to be installed.
 If you don't know a stream URL, try http://icecast.spc.org:8000/longplayer
 (see https://longplayer.org/ for a description).
 """
-import argparse
 import queue
 import sys
 
@@ -28,6 +27,7 @@ args, remaining = parser.parse_known_args()
 if args.list_devices:
     print(sd.query_devices())
     parser.exit(0)
+
 parser = argparse.ArgumentParser(
     description=__doc__,
     formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -56,10 +56,6 @@ print('Getting stream information ...')
 
 try:
     info = ffmpeg.probe(args.url)
-except ffmpeg.Error as e:
-    sys.stderr.buffer.write(e.stderr)
-    parser.exit(e)
-
 streams = info.get('streams', [])
 if len(streams) != 1:
     parser.exit('There must be exactly one stream available')
