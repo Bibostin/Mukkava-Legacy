@@ -1,6 +1,10 @@
-def file_operation(list_name, operation, ip):  # TODO: file presence / perm checks, input validation
+"""
+This module is responsible for the following tasks:
+"""
 
+config = toml.load('cfg.toml')# Dictionary pulled from server_config.toml
 
+def list_operation(list_name, operation, ip):  # TODO: file presence / perm checks, input validation
     if operation == "check":  # check for occurrence of an IP in whitelist or blacklist.
         input_file = open(f'{list_name}.txt', 'r')
         parsed_file = (input_file.read().splitlines())
@@ -30,5 +34,10 @@ def file_operation(list_name, operation, ip):  # TODO: file presence / perm chec
             log_handler.info(f'Successfully removed {ip} from {list_name}.')
         else:
             log_handler.error(f'Attempted to remove a non present IP, {ip} from {list_name}.')
+
     else:
         log_handler.error(f'Invalid use of file_operation function, with params: {list_name} {operation} {ip}')
+
+def config_operation(operation, data):
+    pass
+

@@ -1,5 +1,5 @@
 import sounddevice as sd
-import pyogg
+import pyogg_test
 import numpy
 import math
 
