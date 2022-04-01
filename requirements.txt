@@ -2,3 +2,4 @@ file for porting library requirements, don't upload a venv to git, fill and uplo
 
 sounddevice~=0.4.4
 numpy~=1.22.3
+pyFLAC~=2.0.0
