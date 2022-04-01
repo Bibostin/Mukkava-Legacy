@@ -1,13 +1,18 @@
-"""
-This module is responsible for the following major tasks:
-
-note:
+'''
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+MODULE PURPOSE:
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+MODULE NOTES:
 This module sets up logging chains, while this required for sys_logger, it is not for chat logger, however I have adopted the same methodology
 simply to make understanding the code easier, rather then switching to the method use to setup a direct logger.
 
-todo:
 make screen logging optional
-"""
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+MODULE TEST CODE:
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+DISSERTATION NOTES:
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+'''
 
 import logging  # Logging server operation / streaming to stdout
 import datetime  # used for appending exact date / start time to log filenames
