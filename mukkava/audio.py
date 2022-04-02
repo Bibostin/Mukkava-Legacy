@@ -6,7 +6,7 @@ MODULE PURPOSE:
     Mixing inbound packets into a single source for audio playback
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 MODULE NOTES:
-    Latency = blocksize (buffer size) / sample rate nominally, this programs latency (excluding network travel time) with the current default values is 5.3ms, not bad.
+    Latency = blocksize (buffer size) / sample rate nominally, this programs latency (excluding network travel time / mixing) with the current default values is 5.3ms, not bad.
     if you are not explitly setting samplerate and blocksize as I am doing above to make sd and pyflac play nice together however, you could set these values to 0 which
     tells sd to change this equation dynamically. Alternatively  #sd.default.latency = 'seconds' can be used which tells sd how many seconds sd should aim for between
     stream data being produced, this can also be set to "low" or high" which use your input / output devices maximum or minimum respectively.
