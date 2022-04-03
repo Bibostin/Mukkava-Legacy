@@ -19,20 +19,6 @@ MODULE TEST CODE:
     while True:
         audio_out.data_decode_buffer.put(audio_in.data_buffer.get())
         audio_out.process()
-
-    Queue(maxsize=args.buffersize)
-    data_1, fs_1 = sf.read('sound_file_1.wav', dtype='float32')
-    data_2, fs_2 = sf.read('sound_file_2.wav', dtype='float32')
-
-    if len(data_1) > len(data_2):
-        data = data_1 + np.pad(data_2, (0, len(data_1) - len(data_2)))
-    else:
-        data = np.pad(data_1, (0, len(data_2) - len(data_1))) + data_2
-
-    # determine fs from a combination of fs_1 and fs_2 of your choosing, like
-    fs = min(fs_1, fs_2)
-
-    sd.play(data, fs)
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 DISSERTATION NOTES:
 https://github.com/TaylorSMarks/playsound - considered, but not used due to a lack of ability recording.
@@ -100,6 +86,6 @@ class AudioOutput:  # Sets up a sound device output stream & flacc decoder. take
         if not self.data_playback_buffer.empty():
             outdata[:] = self.data_playback_buffer.get_nowait()
 
-
-
-
+class AudioMixer:
+    def __init__(self):
+        pass
