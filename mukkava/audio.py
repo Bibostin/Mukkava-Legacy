@@ -10,6 +10,10 @@ MODULE NOTES:
     if you are not explitly setting samplerate and blocksize as I am doing above to make sd and pyflac play nice together however, you could set these values to 0 which
     tells sd to change this equation dynamically. Alternatively  #sd.default.latency = 'seconds' can be used which tells sd how many seconds sd should aim for between
     stream data being produced, this can also be set to "low" or high" which use your input / output devices maximum or minimum respectively.
+
+    TODO:
+        #Decide whether mixer should be a seperate class or intergrated into audio output
+
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 MODULE TEST CODE:
     audio_in = AudioInput()
@@ -86,6 +90,6 @@ class AudioOutput:  # Sets up a sound device output stream & flacc decoder. take
         if not self.data_playback_buffer.empty():
             outdata[:] = self.data_playback_buffer.get_nowait()
 
-class AudioMixer:
-    def __init__(self):
-        pass
+# class AudioMixer:
+#     def __init__(self):
+#         pass
