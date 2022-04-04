@@ -69,7 +69,10 @@ class Symetric:  # Symetric encryption (Xsalsa20) and MAC authentication (Poly13
         else:
             self.key = b''
             for i in range(0, 32):
-                self.key += bytes(password[i % len(password)], encoding='utf8') # Key MUST be 32 Bytes long so we transform the password into a 32byte sequence
+                for ii in range(len(password)):
+                    self.key += bytes(password[i % len(password)], encoding='utf8') # Key MUST be 32 Bytes long so we transform the password into a 32byte sequence
+
+
         self.symetric_box = nacl.secret.SecretBox(self.key)  # create a box to encrypt and decrypt with
 
 
@@ -99,7 +102,6 @@ class Asymetric:  # Asymetric encryption (Curve25519) and  digital signatures (E
 
     def encrypt(self, data):
         return self.asymetric_box.encrypt(self.private_signing_key.sign(data))
-
 
     def decrypt(self, data):
         return self.neighbor_verify_key.verify(self.asymetric_box.decrypt(data))
