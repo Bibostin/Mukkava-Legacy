@@ -6,6 +6,7 @@ MODULE NOTES:
 
 TODO:
     #ENCRYPTION - EXCEPTION HANDLING
+    #Consider moving back to .conf (not needed, look at toml sections)
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 MODULE TEST CODE:
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -14,6 +15,9 @@ DISSERTATION NOTES:
 '''
 
 import PySimpleGUI as sg
+import toml
+import logging
+import logging.config
 
 sg.theme('Dark')    # Keep things interesting for your users
 
@@ -26,7 +30,7 @@ layout = [[sg.Text('Client Nickname'),sg.Input(key='nick')],
 
 
 
-window = sg.Window('Mukkava v0.0.1', icon='icon/icon.ico').Layout(layout)
+window = sg.Window('Mukkava v0.0.1', icon='ui/ui.ico').Layout(layout)
 
 while True:                             # The Event Loop
     event, values = window.read()

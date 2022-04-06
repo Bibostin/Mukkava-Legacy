@@ -31,6 +31,7 @@ MODULE NOTES:
             in the manner TOFU and SSH do post PAKE would be a significantly better approach, effectively making a password one time use and significantly reducing the amount of chances
             to "crack" the connection.
     - four, Because of the above, as the amount of users on the p2p network grows, the visability of a given password increases and thus its security becomes more and more degraded.
+    TODO: implement Saving of asymetric keys??
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 MODULE TEST CODE:
 
@@ -64,15 +65,11 @@ from nacl.signing import SigningKey, VerifyKey
 
 class Symetric:  # Symetric encryption (Xsalsa20) and MAC authentication (Poly1305) to encode / decode data. created globally and used initally for all sockets
     def __init__(self, password):
-        if len(password) < 12:  # This is an arbitrary length, it would be better to use a perfectly random 32 byte key but this is hard to remember in practice
-            raise ValueError("Supplied password must have a charecter length greater then 10 charecters")
-        else:
-            self.key = b''
-            for i in range(0, 32):
-                for ii in range(len(password)):
-                    self.key += bytes(password[i % len(password)], encoding='utf8') # Key MUST be 32 Bytes long so we transform the password into a 32byte sequence
-
-
+        self.key = b''
+        if len(password) < 12:
+            raise ValueError("Supplied password must have a charecter length greater then 10 charecters") # This is an arbitrary length, it would be better to use a perfectly random 32 byte key but this is hard to remember in practice
+        for i in range(0, 32):
+            self.key += bytes(i + password[i % len(password)], encoding='utf8') # Key MUST be 32 Bytes long so we transform the password into a 32byte sequence
         self.symetric_box = nacl.secret.SecretBox(self.key)  # create a box to encrypt and decrypt with
 
 

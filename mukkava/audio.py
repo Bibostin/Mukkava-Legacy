@@ -11,9 +11,11 @@ MODULE NOTES:
     tells sd to change this equation dynamically. Alternatively  #sd.default.latency = 'seconds' can be used which tells sd how many seconds sd should aim for between
     stream data being produced, this can also be set to "low" or high" which use your input / output devices maximum or minimum respectively.
 
-    TODO:
-        #Decide whether mixer should be a seperate class or intergrated into audio output
+    There are two approaches that can be taken when it comes to mixing audio, approach one where each socket creates its own AudioOutput instance, and vies for control of the output
+    device (this is simple to implement, but resource intensive) and approach two, where only a single instance of AudioOutput is used and audio is sourced from a multitude of
+    buffers, mixed then sent to the playback device (a little more complex, and with the potential for latency issues, but significantly less resource intensive.)
 
+    TODO: Decide whether mixer should be a seperate class or intergrated into audio output
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 MODULE TEST CODE:
     audio_in = AudioInput()
@@ -22,7 +24,7 @@ MODULE TEST CODE:
     audio_out.outstream.start()
     while True:
         audio_out.data_decode_buffer.put(audio_in.data_buffer.get())
-        audio_out.process()
+        audio_out.process_input()
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 DISSERTATION NOTES:
 https://github.com/TaylorSMarks/playsound - considered, but not used due to a lack of ability recording.
@@ -33,11 +35,11 @@ https://github.com/Zuzu-Typ/PyOpenAL - Tested, but decided not to use as it does
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 """
 
-import soundfile as sf
 import sounddevice as sd  # Sound device, portaudio wrapper for recording and playback of audio
 import numpy; assert numpy  # numpy is utilised by sounddevice, but sounddevice doesn't show this to the interpreter so we have to assert it to stop pep warnings
 import pyflac  # Python implementation of the flac standard, used for encoding and decoding
 import queue  # used for buffering input and output sound data for transmission / playback
+
 
 sd.default.channels = 2  # Default number of channels sd will attempt to use for input and output devices (I use 2 for Stereo audio.)
 sd.default.dtype = 'int16'  # bit depth for a singular sample frame. pyFLAC currently only supports 16-bit audio, sd supports greater values.
@@ -59,7 +61,7 @@ def audio_device_setup():  # Responsible for inital audio device listing, setup 
     sd.wait()
 
 
-class AudioInput:  # Sets up a sound device input stream & flacc encoder. instream generates input audio data, passes it to flacc which encodes it, then puts it in a queue for serialisation.
+class AudioInput:  # Sets up a sound device input stream & flacc encoder. instream generates input audio data, passes it to flac which encodes it, then puts it in a queue for serialisation.
     def __init__(self):
         self.instream = sd.InputStream(callback=self.instream_callback)
         self.flac_encoder = pyflac.StreamEncoder(write_callback=self.encoder_callback, blocksize=sd.default.blocksize, sample_rate=sd.default.samplerate, compression_level=5)
@@ -72,24 +74,33 @@ class AudioInput:  # Sets up a sound device input stream & flacc encoder. instre
         self.data_buffer.put(buffer)
 
 
-class AudioOutput:  # Sets up a sound device output stream & flacc decoder. takes pynum array input audio, encodes it, then puts it in a queue for serialisation.
+class AudioOutput:  # Sets up a sound device output stream & flacc decoder. takes encoded flac stream/s decodes them, mixes them into a single source then puts into a buffer for playback.
     def __init__(self):
-        self.data_decode_buffer = queue.SimpleQueue()  # buffer for incoming data that needs to be decoded
+        self.data_decode_buffers = []  # array of buffers for incoming data from sockets that needs to be decoded
+        self.data_mixing_buffers = []  # array of buffers for decoded data that needs to be mixed together
         self.data_playback_buffer = queue.SimpleQueue()  # buffer for processed data that can be played back to client
-        self.outstream = sd.OutputStream(callback=self.outstream_callback)
-        self.flac_decoder = pyflac.StreamDecoder(write_callback=self.decoder_callback)
+        self.outstream = sd.OutputStream(callback=self.outstream_callback)  # a sd output playback stream that takes numpy arrays and converts to sound
+        self.flac_decoder = pyflac.StreamDecoder(write_callback=self.decoder_callback)  # A pyflac decoder that converts encoded flac files back to numpy arrays
 
-    def process(self):  # fucntion that when called, checks for data in the decode buffer, and if present calls the decoder to process the next piece of data
-        if not self.data_decode_buffer.empty():
-            self.flac_decoder.process(self.data_decode_buffer.get_nowait())
+    def add_queue(self):  # function that when called, adds a new queue to the decode and mixing buffer arrays, required to initalise a new socket instances individual buffers.
+        self.data_decode_buffers.append(queue.SimpleQueue())
+        self.data_mixing_buffers.append(queue.SimpleQueue())
 
-    def decoder_callback(self, buffer, sample_rate, num_channels, num_samples):  # called by flac_decoder once it has decoded data, puts the decoded in the playback buffer.
-        self.data_playback_buffer.put(buffer)
+    def process_input(self):  # function that when called, checks for data in each decode buffer, if present calls the decoder to process the next piece of data
+        for buffer_number in self.data_decode_buffers:
+            if not self.data_decode_buffers[buffer_number.empty()]:
+                self.flac_decoder.process(self.data_decode_buffers[buffer_number.getnowait])
+        self.process_input_callback()  #once we have decoded an entire set of buffer audio data we need to mix it.
+
+    def decoder_callback(self, buffer_data, sample_rate, num_channels, num_samples, buffer_number):  # called by flac_decoder once it has decoded data, puts the decoded in the appropriate playback buffer.
+        self.data_mixing_buffers[buffer_number.put(buffer_data)]  # if this doesn't work change buffer_data name to buffer
+
+    def process_input_callback(self):
+            for buffer_number in self.data_mixing_buffers:
+                pass
 
     def outstream_callback(self, outdata, frames, sd_time, status):  # called by outstream to fetch new audio data autonmously from the above, if data is present in the playback buffer, its fed into the outputstream.
         if not self.data_playback_buffer.empty():
             outdata[:] = self.data_playback_buffer.get_nowait()
 
-# class AudioMixer:
-#     def __init__(self):
-#         pass
+

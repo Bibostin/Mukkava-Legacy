@@ -1,0 +1,7 @@
+Logging in configuration file / modules
+file io finalisation
+mixer for audio streams
+file setup
+
+sockets, peer verification, messaging and data forwarding
+ui choice / design

@@ -1,6 +1,0 @@
-client_name = "user"  # Defines the name the client will advertise to other peers
-last_connected_ip = "127.0.0.1"  # storage for the IP of the last inital client connected to
-port = 9978  # the port the server will use for its UDP (voip) and TCP (control / text ) sockets
-file_logging = true  # log system messages to a file in logs/sys-log
-screen_logging = true  # log system messages to stdout (python terminal)
-chat_logging = true  # log chat messages to chat-log
