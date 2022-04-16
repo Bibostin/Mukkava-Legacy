@@ -76,28 +76,30 @@ class AudioInput:  # Sets up a sound device input stream & flacc encoder. instre
 
 class AudioOutput:  # Sets up a sound device output stream & flacc decoder. takes encoded flac stream/s decodes them, mixes them into a single source then puts into a buffer for playback.
     def __init__(self):
-        self.data_decode_buffers = []  # array of buffers for incoming data from sockets that needs to be decoded
-        self.data_mixing_buffers = []  # array of buffers for decoded data that needs to be mixed together
+        self.data_decode_buffer_array = []  # array of buffers for incoming data from sockets that needs to be decoded
+        self.data_mixing_array = []  # array of int16 numpy decoded data to be mixed into a final source for playback
         self.data_playback_buffer = queue.SimpleQueue()  # buffer for processed data that can be played back to client
         self.outstream = sd.OutputStream(callback=self.outstream_callback)  # a sd output playback stream that takes numpy arrays and converts to sound
         self.flac_decoder = pyflac.StreamDecoder(write_callback=self.decoder_callback)  # A pyflac decoder that converts encoded flac files back to numpy arrays
 
     def add_queue(self):  # function that when called, adds a new queue to the decode and mixing buffer arrays, required to initalise a new socket instances individual buffers.
-        self.data_decode_buffers.append(queue.SimpleQueue())
-        self.data_mixing_buffers.append(queue.SimpleQueue())
+        self.data_decode_buffer_array.append(queue.SimpleQueue())
 
     def process_input(self):  # function that when called, checks for data in each decode buffer, if present calls the decoder to process the next piece of data
-        for buffer_number in self.data_decode_buffers:
-            if not self.data_decode_buffers[buffer_number.empty()]:
-                self.flac_decoder.process(self.data_decode_buffers[buffer_number.getnowait])
+        for buffer_number in self.data_decode_buffer_array:
+            if not self.data_decode_buffer_array[buffer_number].empty():
+                self.flac_decoder.process(self.data_decode_buffer_array[buffer_number].getnowait())
         self.process_input_callback()  #once we have decoded an entire set of buffer audio data we need to mix it.
 
-    def decoder_callback(self, buffer_data, sample_rate, num_channels, num_samples, buffer_number):  # called by flac_decoder once it has decoded data, puts the decoded in the appropriate playback buffer.
-        self.data_mixing_buffers[buffer_number.put(buffer_data)]  # if this doesn't work change buffer_data name to buffer
+    def decoder_callback(self, buffer, sample_rate, num_channels, num_samples):  # called by flac_decoder once it has decoded data, puts the decoded in the appropriate playback buffer.
+        self.data_mixing_array.append(buffer) # At this point it doesn't matter what specific buffer the data came from, merely that it is a distinct element that can be mixed.
 
     def process_input_callback(self):
-            for buffer_number in self.data_mixing_buffers:
-                pass
+        if len(self.data_mixing_array) is 1:  #if we only have one client we do not need to mix audio
+            self.data_playback_buffer.put(self.data_mixing_array[0])
+        else:
+
+        self.data_mixing_array.clear()  # Flush the mixing array for new data.
 
     def outstream_callback(self, outdata, frames, sd_time, status):  # called by outstream to fetch new audio data autonmously from the above, if data is present in the playback buffer, its fed into the outputstream.
         if not self.data_playback_buffer.empty():
