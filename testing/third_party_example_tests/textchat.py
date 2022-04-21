@@ -5,8 +5,8 @@ import sys
 
 HEADER_LENGTH = 10
 
-IP = "127.0.0.1"
-PORT = 1234
+IP = "192.168.2.2"
+PORT = 9988
 my_username = input("Username: ")
 
 # Create a socket
