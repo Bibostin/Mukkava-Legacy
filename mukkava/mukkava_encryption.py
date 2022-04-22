@@ -56,10 +56,14 @@ DISSERTATION NOTES:
     FURTHER DEVELOPMENT: See flaws section of Module
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 """
+import cchardet
 import nacl.utils
 import nacl.secret
 from nacl.public import PrivateKey, Box
 from nacl.signing import SigningKey, VerifyKey
+
+length_headersize = 4  # constant variable for the size of the message length header in charecter bytes. used to add padding. must be the same value between all clients.
+encryption_length_headersize = 44 # constant variable for the expected size of the encrypted message length header in charecter bytes. must be the same value between all clients
 
 
 class Symetric:  # Symetric encryption (Xsalsa20) and MAC authentication (Poly1305) to encode / decode data. created globally and used initally for all sockets
@@ -72,9 +76,13 @@ class Symetric:  # Symetric encryption (Xsalsa20) and MAC authentication (Poly13
         self.symetric_box = nacl.secret.SecretBox(self.key)  # create a box to encrypt and decrypt with
 
     def encrypt(self, data):  # symetrically encrypt data
+        if not isinstance(data, bytes):  #Check if passed in argument is of datatype bytes, as symetric can only take encrypt bytestrings
+            bytes(data,"utf-8")
         return self.symetric_box.encrypt(data)
 
     def decrypt(self, data):  # symetrically decrypt data
+        if not isinstance(data, nacl.utils.EncryptedMessage)  #Because encrypted data isn't encoded with utf-8, we only need to
+            data.decode("utf-8")
         return self.symetric_box.decrypt(data)
 
 
@@ -96,7 +104,11 @@ class Asymetric:  # Asymetric encryption (Curve25519) and  digital signatures (E
         self.asymetric_box = Box(self.private_decryption_key, self.neighbor_public_key)
 
     def encrypt(self, data):
+        if not isinstance(data, bytes):
+            bytes(data, "utf-8")
         return self.asymetric_box.encrypt(self.private_signing_key.sign(data))
 
     def decrypt(self, data):
+        if not isinstance(data, nacl.utils.EncryptedMessage)
+            data.decode("utf-8")
         return self.neighbor_verify_key.verify(self.asymetric_box.decrypt(data))

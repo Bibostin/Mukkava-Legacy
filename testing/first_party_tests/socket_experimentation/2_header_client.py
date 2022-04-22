@@ -5,15 +5,15 @@ the tldr is that its used to split a string into sections based on explicit rang
 
 import socket
 
-headersize = 10 #Set our headersize to 10 charecters
+headersize = 3 #Set our headersize to 10 charecters
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((socket.gethostname(), 9997))
+s.connect((socket.gethostname(), 9987))
 
 new_msg = True #new msg will be used to control whether we are working with the first section of a new message, and thus if we need to strip the msg length  from the inital header
 full_msg = "" #string that the final buffered msg will be taken from
 
 while True:
-    msg = s.recv(16) # note, recv's value must be larger then the headersize, otherwise you may encounter issues
+    msg = s.recv(10) # note, recv's value must be larger then the headersize, otherwise you may encounter issues
     if new_msg:  #if new msg is set to true
         msglen = int(msg[:headersize].decode("utf-8")) #msglen = the integer value of msg sliced ending after our header length, which should corospond to our msgs length
         print("new message length:", msglen) 

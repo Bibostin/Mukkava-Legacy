@@ -22,9 +22,9 @@ theres nothing to say that you couldn't append message types into this header se
 import socket
 import time
 
-headersize = 10
+headersize = 3
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.bind((socket.gethostname(), 9997))
+s.bind((socket.gethostname(), 9987))
 s.listen(5) #listen accepts a number specifying queue length
 
 while True:     

@@ -39,6 +39,15 @@ MODULE TEST CODE:
         print("now in audio stream loop, talk to hear latency of audio with encoding, decoding and faux mixing")
         audio_out_buffer_instance1.put(audio_in.data_buffer.get())
         audio_out.process_input()
+
+    #You can find the rough expected charecter size of each piece of encoded input device audio data with the following code, useful for determining headersize. the current setup ranges
+    #from 1200 to 2200~ thus a minimum of 3 charecters (or bytes rather) are needed for headersize as 3^8 = 6561 but 2^8 = 256
+        input = mukkava_audio.AudioInput()
+        input.instream.start()
+        while True:
+            encoded_data = input.data_buffer.get()
+            print(encoded_data)
+            print(len(encoded_data))
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 DISSERTATION NOTES:
 https://github.com/TaylorSMarks/playsound - considered, but not used due to a lack of ability recording.
