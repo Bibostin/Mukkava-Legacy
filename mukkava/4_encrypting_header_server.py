@@ -6,9 +6,6 @@ import socket
 symetric = mukkava_encryption.Symetric("lorumipsumdoremifarquad")
 audioinput = mukkava_audio.AudioInput()
 
-msg_length_headersize = 4 # constant variable for the size of the message length header in bytes. must be the same value between all clients
-encryption_length_headersize = 44
-
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # This sets an option that should let us reclaim dead sockets
 s.bind((socket.gethostname(), 9997))
@@ -21,8 +18,9 @@ while True:
     audioinput.instream.start()  # Now that we have a client, start the audioinput stream in order to start buffering voice data
     while True:
         try:
-            data = symetric.encrypt(audioinput.data_buffer.get())  # fetch data from the audioinput stream, then symetrically encrypt it
-            header = symetric.encrypt(bytes(f"{len(data):<{length_headersize}}", "utf-8"))  #ge tthe length of our encrypted voice data, pad it to four charecters, encode tu utf-8 and then encrypt symetrically, should produce a 44 byte long header.
+            data = audioinput.data_buffer.get()
+            data = symetric.encrypt(data)  # fetch data from the audioinput stream, then symetrically encrypt it
+            header = symetric.encrypt(f"{len(data):<{mukkava_encryption.message_length_hsize}}")  #ge tthe length of our encrypted voice data, pad it to four charecters, encode tu utf-8 and then encrypt symetrically, should produce a 44 byte long header.
             clientsocket.send(header+data)  # send the combined header and input voice data down the socket to the client
 
         except ConnectionResetError:  #if the client violently drops the socket

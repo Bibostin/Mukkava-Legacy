@@ -56,34 +56,39 @@ DISSERTATION NOTES:
     FURTHER DEVELOPMENT: See flaws section of Module
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 """
-import cchardet
 import nacl.utils
 import nacl.secret
 from nacl.public import PrivateKey, Box
 from nacl.signing import SigningKey, VerifyKey
 
-length_headersize = 4  # constant variable for the size of the message length header in charecter bytes. used to add padding. must be the same value between all clients.
-encryption_length_headersize = 44 # constant variable for the expected size of the encrypted message length header in charecter bytes. must be the same value between all clients
-
-
+#Message header constants - Used to add fixed length padding to the header fields so sockets know how much data to recieve Padding_test in first_party_tests shows this well.
+message_length_hsize = 4  # constant variable for the message length section of the header in charecter bytes.
+message_type_hsize = 4  # constant variable for the size of the message type section of the header
+encrypted_hsize = 40 + message_length_hsize # constant variable for the expected charecter byte size of an individualy encrypted header section. Encryption is done individually due to how MACs and DigSigs work.
+    #TODO: ehsize is ONLY for symetric at the moment, keep in mind asymetric might need its own seperate value.
 class Symetric:  # Symetric encryption (Xsalsa20) and MAC authentication (Poly1305) to encode / decode data. created globally and used initally for all sockets
     def __init__(self, password):
         self.key = b''
         if len(password) < 12:
-            raise ValueError("Supplied password must have a charecter length greater then 10 charecters") # This is an arbitrary length, it would be better to use a perfectly random 32 byte key but this is hard to remember in practice
+            ValueError("Supplied password must have a charecter length greater then 10 charecters") # This is an arbitrary length, it would be better to use a perfectly random 32 byte key but this is hard to remember in practice
         for i in range(0, 32):
             self.key += bytes(password[i % len(password)], encoding='utf8') # Key MUST be 32 Bytes long so we transform the password into a 32byte sequence
         self.symetric_box = nacl.secret.SecretBox(self.key)  # create a box to encrypt and decrypt with
 
-    def encrypt(self, data):  # symetrically encrypt data
-        if not isinstance(data, bytes):  #Check if passed in argument is of datatype bytes, as symetric can only take encrypt bytestrings
-            bytes(data,"utf-8")
+    def encrypt(self, data):  # symetrically encrypt data. expects bytestream input
+        if not isinstance(data, bytes):  #There are cases where the data we are using may have allready had to be turned into bytes prior to being encrypted (voice data) in this case we skip encoding so as to avoid double encoding the data.
+            data = bytes(data,"utf-8")  # if it isn't, encode it into utf-8 by default
         return self.symetric_box.encrypt(data)
 
-    def decrypt(self, data):  # symetrically decrypt data
-        if not isinstance(data, nacl.utils.EncryptedMessage)  #Because encrypted data isn't encoded with utf-8, we only need to
-            data.decode("utf-8")
-        return self.symetric_box.decrypt(data)
+    def decrypt(self, data):  # symetrically decrypt data. expects data to be of type nacl.utils.EncryptedMessage
+        data = self.symetric_box.decrypt(data)
+        try:
+            print(data)  #TODO: REMOVE THIS
+            return data.decode("utf-8").strip()  # Remove encoding from data
+        except UnicodeDecodeError:  #We just tried to decode voice data that was never encoded as utf-8, if pyflac had classtypes for its data that would be a better, less wasteful approach
+            print(data) #TODO: REMOVE THIS
+            return data
+
 
 
 class Asymetric:  # Asymetric encryption (Curve25519) and  digital signatures (ED25519) to encode / decode data. created individually per socket session
@@ -103,12 +108,14 @@ class Asymetric:  # Asymetric encryption (Curve25519) and  digital signatures (E
         self.neighbor_verify_key = VerifyKey(nvkb)
         self.asymetric_box = Box(self.private_decryption_key, self.neighbor_public_key)
 
-    def encrypt(self, data):
+    def encrypt(self, data):  # Asymetrically encrypt data. expects bytestream input
         if not isinstance(data, bytes):
-            bytes(data, "utf-8")
+            data = bytes(data, "utf-8")
         return self.asymetric_box.encrypt(self.private_signing_key.sign(data))
 
-    def decrypt(self, data):
-        if not isinstance(data, nacl.utils.EncryptedMessage)
-            data.decode("utf-8")
-        return self.neighbor_verify_key.verify(self.asymetric_box.decrypt(data))
+    def decrypt(self, data):  # Asymetrically decrypt data. expects data to be of type nacl.utils.EncryptedMessage
+        self.neighbor_verify_key.verify(self.asymetric_box.decrypt(data))
+        try:
+            return data.decode("utf-8").strip()
+        except UnicodeDecodeError:
+            return data
