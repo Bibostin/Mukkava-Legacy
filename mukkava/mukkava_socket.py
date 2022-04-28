@@ -56,7 +56,7 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
         while True:
             inbound_socket, address = self.server_socket.accept()
             address = address[0]  # strip client side port from the address as we dont need it
-            print(f"<:{address} has connected")
+            print(f"<: inbound socket from {address} has connected")
 
             if address not in self.sockets_info["outbound_sockets"]:  # check if we have an existing outbound socket key for this given address, if we don't we need to setup our own client connection AND asymetric encryption
                 self.sockets_info["inbound_sockets"][inbound_socket] = {}  # setup a dictionary we can append information on the specific client to tied to the socket object.
@@ -69,6 +69,7 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
 
                 self.sockets_info["inbound_sockets"][inbound_socket]["encryption"] = asymetric_instance
                 self.outbound_socket_handler(address)  # if address isn't in self.sockets_info["outbound_sockets] we do not have a client going to the opposing server and must create one.
+                print(f"<:Starting own outbound socket instance to {address} ")
             else:
                 self.sockets_info["inbound_sockets"][inbound_socket]["encryption"] = self.sockets_info["outbound_sockets"][address]["asymetric"]
 
@@ -87,31 +88,17 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
     def start(self, inital_address=None):
         self.server_socket.listen(5)
         print(f"<:TCP server started on {socket.gethostbyname(socket.gethostname())}:{self.port} waiting for new connections")
-        server_socket_handler_thread = threading.Thread(target=self.inbound_socket_handler())
+        inbound_socket_handler_thread = threading.Thread(target=self.inbound_socket_handler())
         outbound_socket_processor_thread = threading.Thread(target=self.outbound_socket_processor())
-        server_socket_handler_thread, outbound_socket_processor_thread.start()
-        if inital_address: self.outbound_socket_handler(inital_address)
+        inbound_socket_handler_thread.setDaemon(True)
+        outbound_socket_processor_thread.setDaemon(True)
+        inbound_socket_handler_thread.start()
+        outbound_socket_processor_thread.start()
+        if inital_address:
+            print(f"<:Inital address of {inital_address} supplied, connecting outbound_socket")
+            self.outbound_socket_handler(inital_address)
         while True:
             usermsg = input("Chat:> ")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    def tcp_outbound_client_handler(self, address):
-        pass
 
 class UDPStack:
     pass
