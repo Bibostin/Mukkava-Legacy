@@ -88,10 +88,10 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
     def start(self, inital_address=None):
         self.server_socket.listen(5)
         print(f"<:TCP server started on {socket.gethostbyname(socket.gethostname())}:{self.port} waiting for new connections")
-        inbound_socket_handler_thread = threading.Thread(target=self.inbound_socket_handler())
-        outbound_socket_processor_thread = threading.Thread(target=self.outbound_socket_processor())
-        inbound_socket_handler_thread.setDaemon(True)
-        outbound_socket_processor_thread.setDaemon(True)
+        inbound_socket_handler_thread = threading.Thread(target=self.inbound_socket_handler)  # you call the function name NOT AN INSTANCE OF THE FUNCTION such as func()
+        outbound_socket_processor_thread = threading.Thread(target=self.outbound_socket_processor)
+        inbound_socket_handler_thread.daemon = True
+        outbound_socket_processor_thread.daemon = True
         inbound_socket_handler_thread.start()
         outbound_socket_processor_thread.start()
         if inital_address:
