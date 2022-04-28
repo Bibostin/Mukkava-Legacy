@@ -91,6 +91,13 @@ class AudioInput:  # Sets up a sound device input stream & flacc encoder. instre
         self.flac_encoder = pyflac.StreamEncoder(write_callback=self.encoder_callback, blocksize=sd.default.blocksize, sample_rate=sd.default.samplerate, compression_level=5)
         self.data_buffer = queue.SimpleQueue()
 
+        #Pyflac allways starts a encode stream with some string information pertaining to the encoder, however mukkava_encryption catches this a utf-8 segment it can decode into a string which errors pyflacs decoder as it needs bytes, not strings
+        #This may seem unelegant but its simple and the alternative is checking the individual encoding of the first couple of sets data with cchardet to see if they are encoded in 'WINDOWS-1252' which is space costly.
+        self.instream.start()
+        for loops in range(3): # The offending string are in the first-third sent segments of "audio data", so we need to clear up to there.
+            self.data_buffer.get()
+        self.instream.stop()
+
     def instream_callback(self, indata, frames, sd_time, status):   # called by instream once it has data, calls the encoder to process raw input data it recieves
         self.flac_encoder.process(indata)  #this is fine as flac_encoder.process() is not blocking
 

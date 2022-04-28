@@ -12,14 +12,14 @@ s.bind((socket.gethostname(), 9997))
 s.listen(5)
 
 while True:
+    audioinput.instream.stop()
     print("server waiting for new client")
     clientsocket, address = s.accept()  #take the return s.accept (a socket object and an ip address)
     print(f"{address} has connected")
     audioinput.instream.start()  # Now that we have a client, start the audioinput stream in order to start buffering voice data
     while True:
         try:
-            data = audioinput.data_buffer.get()
-            data = symetric.encrypt(data)  # fetch data from the audioinput stream, then symetrically encrypt it
+            data = symetric.encrypt(audioinput.data_buffer.get())  # fetch data from the audioinput stream, then symetrically encrypt it
             header = symetric.encrypt(f"{len(data):<{mukkava_encryption.message_length_hsize}}")  #ge tthe length of our encrypted voice data, pad it to four charecters, encode tu utf-8 and then encrypt symetrically, should produce a 44 byte long header.
             clientsocket.send(header+data)  # send the combined header and input voice data down the socket to the client
 

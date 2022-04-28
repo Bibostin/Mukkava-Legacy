@@ -5,15 +5,20 @@ data however the use case evaporated and even then, isinstance(data, bytes / nac
 
 import cchardet
 import mukkava_encryption
+import mukkava_audio
 
 symetric = mukkava_encryption.Symetric("lorumipsumdoremifarquad")
 test1 = b"test"
-test2 = "test"
-test3 = "test".encode()
-test4 = symetric.encrypt(test1)
+test2 = "test".encode()
 
-print(type(test3))
 print(cchardet.detect(test1))
 print(cchardet.detect(test2))
-print(cchardet.detect(test3))
 
+audioinput = mukkava_audio.AudioInput()
+audioinput.instream.start()
+while True:
+    data = audioinput.data_buffer.get()
+    print(data)
+    print(cchardet.detect(data))
+
+#if cchardet.detect(data)[encoding]

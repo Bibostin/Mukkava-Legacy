@@ -12,7 +12,7 @@ client_socket.connect((socket.gethostname(), 9997))  #connect the tcp socket to 
 output.outstream.start() #Start up the mukkava audiooutput stream handler.
 
 while True:  #infinite loop
-    message_length = symetric.decrypt(client_socket.recv(mukkava_encryption.encrypted_hsize))  #fetch a portion of data corosponding to the length of a encrypted headers length (in this example all headers are 44 bytes)
+    message_length = symetric.decrypt(client_socket.recv(mukkava_encryption.sencrypted_hsize))  #fetch a portion of data corosponding to the length of a encrypted headers length (in this example all headers are 44 bytes)
     if not len(message_length):  #If message length doesn't have a length, the server socket terminated softly and we should exit or handle for this.
         client_socket.close()
         break
