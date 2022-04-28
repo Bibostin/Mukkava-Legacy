@@ -39,10 +39,10 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
         outbound_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # create a TCP socket
         outbound_socket.settimeout(3)  # set the maximum ttl for a socket read, write or connect operation.
         try:
-            print(f"<:connecting outbound_socket on {address}:{self.port}")
+            print(f"\<:connecting outbound_socket on {address}:{self.port}")
             outbound_socket.connect((address, self.port))  # connect the supplied address
         except TimeoutError:
-            print(f"failed to connect to {address}:{self.port} closing outbound socket")
+            print(f"\n<:failed to connect to {address}:{self.port} closing outbound socket")
             outbound_socket.close()
             return
 
@@ -53,7 +53,7 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
 
             asymetric_instance = mukkava_encryption.Asymetric()  # setup a new asymetric instance
             asymetric_instance.setup(socket_recieve(outbound_socket, self.symetric), socket_recieve(outbound_socket, self.symetric))
-            socket_send(outbound_socket, self.symetric, asymetric_instance.public_encryption_key)
+            socket_send(outbound_socket, self.symetric, asymetric_instance.public_encryption_key_bytes)
             socket_send(outbound_socket, self.symetric, asymetric_instance.public_verify_key_bytes)
             self.sockets_info["outbound_sockets"][outbound_socket]["encryption"] = asymetric_instance
         else:
@@ -63,20 +63,20 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
         while True:
             inbound_socket, address = self.server_socket.accept()
             address = address[0]  # strip client side port from the address as we dont need it
-            print(f"<:recieving inbound socket connection from {address}")
+            print(f"\n<:recieving inbound socket connection from {address}")
 
             if address not in self.sockets_info["outbound_sockets"]:  # check if we have an existing outbound socket key for this given address, if we don't we need to setup our own client connection AND asymetric encryption
                 self.sockets_info["inbound_sockets"][inbound_socket] = {}  # setup a dictionary we can append information on the specific client to tied to the socket object.
                 self.sockets_info["inbound_sockets"][inbound_socket]["address"] = address
 
                 asymetric_instance = mukkava_encryption.Asymetric()  # setup a new asymetric instance for this specific pair of quad pair of sockets
-                socket_send(inbound_socket, self.symetric, asymetric_instance.public_encryption_key)
+                socket_send(inbound_socket, self.symetric, asymetric_instance.public_encryption_key_bytes)
                 socket_send(inbound_socket, self.symetric, asymetric_instance.public_verify_key_bytes)
                 asymetric_instance.setup(socket_recieve(inbound_socket, self.symetric), socket_recieve(inbound_socket, self.symetric))
 
                 self.sockets_info["inbound_sockets"][inbound_socket]["encryption"] = asymetric_instance
                 self.outbound_socket_handler(address)  # if address isn't in self.sockets_info["outbound_sockets] we do not have a client going to the opposing server and must create one.
-                print(f"<:Starting own outbound socket instance to {address} ")
+                print(f"\n<:Starting own outbound socket instance to {address} ")
             else:
                 self.sockets_info["inbound_sockets"][inbound_socket]["encryption"] = self.sockets_info["outbound_sockets"][address]["asymetric"]
 
@@ -98,7 +98,7 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
 
     def start(self, inital_address=None):
         self.server_socket.listen(5)
-        print(f"<:TCP server started on {socket.gethostbyname(socket.gethostname())}:{self.port} waiting for new connections")
+        print(f"\n<:TCP server started on {socket.gethostbyname(socket.gethostname())}:{self.port} waiting for new connections")
         inbound_socket_handler_thread = threading.Thread(target=self.inbound_socket_handler)  # you call the function name NOT AN INSTANCE OF THE FUNCTION such as func()
         outbound_socket_processor_thread = threading.Thread(target=self.outbound_socket_processor)
         #inbound_socket_handler_thread.daemon = True
