@@ -70,7 +70,7 @@ sd.default.blocksize = 1248  # lower value = less latency, but more performance 
 
 
 def audiosetup():  # Responsible for inital audio device listing, setup and testing    if operation == "list":
-    print(f"available devices to use are bellow: \n{sd.query_devices()} \nDefault devices (input, output) are set to: {sd.default.device}")
+    print(f"available devices to use are bellow: \n{sd.query_devices()} \nDefault devices (input, output) are currently set to: {sd.default.device}")
     while True:
         try: sd.default.device = int(input("Desired input device ID: ")), int(input("Desired output device ID: ")); break
         except: print("supplied device id is a charecter, supply a numeric value")

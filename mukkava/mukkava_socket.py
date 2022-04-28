@@ -37,8 +37,15 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
 
     def outbound_socket_handler(self, address):  # A handler for generating OUTBOUND  (client -> server) socket data streams
         outbound_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # create a TCP socket
-        outbound_socket.settimeout(30)  # set the maximum ttl for a socket read, write or connect operation.
-        outbound_socket.connect((address, self.port))  # connect the supplied address
+        outbound_socket.settimeout(3)  # set the maximum ttl for a socket read, write or connect operation.
+        try:
+            print(f"<:connecting outbound_socket on {address}:{self.port}")
+            outbound_socket.connect((address, self.port))  # connect the supplied address
+        except TimeoutError:
+            print(f"failed to connect to {address}:{self.port} closing outbound socket")
+            outbound_socket.close()
+            return
+
 
         if address not in self.sockets_info["inbound_sockets"].values():  # Check if we have an existing inbound socket key for this given adddress, if we don't we need to setup asymetric encryption
             self.sockets_info["outbound_sockets"][outbound_socket] = {}  # setup an dictionary we can append information on the specific client to.
@@ -56,11 +63,11 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
         while True:
             inbound_socket, address = self.server_socket.accept()
             address = address[0]  # strip client side port from the address as we dont need it
-            print(f"<: inbound socket from {address} has connected")
+            print(f"<:recieving inbound socket connection from {address}")
 
             if address not in self.sockets_info["outbound_sockets"]:  # check if we have an existing outbound socket key for this given address, if we don't we need to setup our own client connection AND asymetric encryption
                 self.sockets_info["inbound_sockets"][inbound_socket] = {}  # setup a dictionary we can append information on the specific client to tied to the socket object.
-                self.sockets_info["inbound_sockets"][inbound_socket][address] = address
+                self.sockets_info["inbound_sockets"][inbound_socket]["address"] = address
 
                 asymetric_instance = mukkava_encryption.Asymetric()  # setup a new asymetric instance for this specific pair of quad pair of sockets
                 socket_send(inbound_socket, self.symetric, asymetric_instance.public_encryption_key)
@@ -74,15 +81,19 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
                 self.sockets_info["inbound_sockets"][inbound_socket]["encryption"] = self.sockets_info["outbound_sockets"][address]["asymetric"]
 
     def inbound_socket_processor(self, data):
-        # for inbound sockets in sockets_info[inbound_sockets]
-            # tcp_send(socket, socket specific encryption, data)
-        pass
+        if self.sockets_info["inbound_sockets"]:
+            if data:
+                data = self.username + ":" + data
+            for socket in self.sockets_info["inbound_sockets"]:
+                socket_send(socket, self.sockets_info[socket]["encryption"], data)
+        else: print("<:currently not connected to any other clients. ")
 
-    def outbound_socket_processor(self):  # How do we know when a socket has data? do we simply keep polling or do we use select???
-        # While True, for sockets in sockets_info[outbound_sockets]
-            # data = tcp_recieve(socket, socket_specific encryption)
-            # if data is True:
-                # print(data)
+    def outbound_socket_processor(self):  # TODO: How do we know when a socket has data? do we simply keep polling or do we use select???
+        while True:
+            for socket in self.sockets_info["outbound_sockets"]:
+                data = socket_recieve(socket, self.sockets_info[socket]["encryption"])
+                if data:
+                    print(f"<:{self.sockets_info[socket]['address']}:{data}")
         pass
 
     def start(self, inital_address=None):
@@ -90,15 +101,15 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
         print(f"<:TCP server started on {socket.gethostbyname(socket.gethostname())}:{self.port} waiting for new connections")
         inbound_socket_handler_thread = threading.Thread(target=self.inbound_socket_handler)  # you call the function name NOT AN INSTANCE OF THE FUNCTION such as func()
         outbound_socket_processor_thread = threading.Thread(target=self.outbound_socket_processor)
-        inbound_socket_handler_thread.daemon = True
-        outbound_socket_processor_thread.daemon = True
+        #inbound_socket_handler_thread.daemon = True
+        #outbound_socket_processor_thread.daemon = True
         inbound_socket_handler_thread.start()
         outbound_socket_processor_thread.start()
         if inital_address:
-            print(f"<:Inital address of {inital_address} supplied, connecting outbound_socket")
             self.outbound_socket_handler(inital_address)
         while True:
             usermsg = input("Chat:> ")
+            self.inbound_socket_processor(usermsg)
 
 class UDPStack:
     pass

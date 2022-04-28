@@ -43,14 +43,23 @@ while True:
 
 
 while True:
-    symetricphrase = input("Please enter the preagreed phrase to use as a symetric key (min length of 12 charecters): ") or "lorumipsumdoremifarquad" #TODO: REMOVE THIS OR
-    if len(symetricphrase) > 12:
+    symetricphrase = input("Please enter the preagreed phrase to use as a symetric key (min length of 12 charecters): ")
+    if not symetricphrase:
+        print("no key supplied, defaulting to testing key \"lorumipsumdoremifarquad\"")
+        symetricphrase = "lorumipsumdoremifarquad"
         break
-    print("supplied phrase is not 12 charecters long")
+    elif len(symetricphrase) > 12: break
+    else: print("supplied phrase is not 12 charecters long")
 
 
 while True:
-    port = int(input("Please enter the port you want your mukkava client to listen on / connect over (1024 - 65535): "))
+    port = (input("Please enter the port you want your mukkava client to listen on / connect over (1024 - 65535): "))
+    if not port:
+        print("no port supplied, defaulting to testing port, 9987")
+        port = 9987
+        break
+    try: port = int(port)
+    except ValueError: print("You have entered a floating point value, use an integer"); continue
     if port in range(1024,65535): break
     elif port in range(1,1023): print(f"{port} is a typically reserved port number, supply a number between 1024 - 65535")
     else: print(f"{port} is  a invalid port number, supply a number between 1024 - 65535")
