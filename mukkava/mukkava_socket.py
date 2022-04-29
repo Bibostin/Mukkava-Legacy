@@ -99,15 +99,15 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
             if data:
                 data = self.username + ": " + data
             for socket in self.sockets_info["inbound_sockets"]:
-                socket_send(socket, self.sockets_info[socket]["encryption"], data)
+                socket_send(socket, self.sockets_info["inbound_sockets"][socket]["encryption"], data)
         else: print("<:currently not connected to any other clients. ")
 
     def outbound_socket_processor(self):  # TODO: How do we know when a socket has data? do we simply keep polling or do we use select???
         while True:
             if self.sockets_info["outbound_sockets"]:
                 for socket in self.sockets_info["outbound_sockets"]:
-                    data = socket_recieve(socket, self.sockets_info[socket]["encryption"])
-                    if data: print(f"<:{self.sockets_info[socket]['address']}:{data}")
+                    data = socket_recieve(socket, self.sockets_info["outbound_sockets"][socket]["encryption"])
+                    if data: print(f"<:{self.sockets_info['outbound_sockets'][socket]['address']}:{data}")
 
 
     #UTILITY FUNCTIONS
