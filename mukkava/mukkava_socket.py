@@ -61,7 +61,7 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
                 self.sockets_info["inbound_sockets"][inbound_socket]["encryption"] = asymetric_instance
                 self.outbound_socket_handler(address)  # if address isn't in self.sockets_info["outbound_sockets] we do not have a client going to the opposing server and must create one.
             else:
-                self.sockets_info["inbound_sockets"][inbound_socket]["encryption"] = existing_socket["encryption"]
+                self.sockets_info["inbound_sockets"][inbound_socket]["encryption"] = self.sockets_info["outbound_sockets"][existing_socket]["encryption"]
 
     def outbound_socket_handler(self, address):  # A handler for generating OUTBOUND  (client -> server) socket data streams
         outbound_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # create a TCP socket
@@ -88,7 +88,8 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
             socket_send(outbound_socket, self.symetric, asymetric_instance.public_verify_key_bytes)
             self.sockets_info["outbound_sockets"][outbound_socket]["encryption"] = asymetric_instance
         else:
-            self.sockets_info["outbound_sockets"][outbound_socket]["encryption"] = existing_socket["encryption"]
+            print(f"<:found existing to {address}, {self.sockets_info['inbound_sockets'][existing_socket]}")
+            self.sockets_info["outbound_sockets"][outbound_socket]["encryption"] = self.sockets_info["inbound_sockets"][existing_socket]["encryption"]
 
 
 
