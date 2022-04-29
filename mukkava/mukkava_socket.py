@@ -49,7 +49,7 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
             address = address[0]  # strip client side port from the address as we dont need it
             print(f"<:connection from {address}")
 
-            if not (existing_socket := self.check_for_existing_socket("outbound", address)):  # check if we have an existing outbound socket key for this given address, if we do, return it and bind its asymetric instance to our inbound socket. if we don't we need to setup our own client connection AND asymetric encryption
+            if not (existing_socket := self.check_for_existing_socket("outbound_sockets", address)):  # check if we have an existing outbound socket key for this given address, if we do, return it and bind its asymetric instance to our inbound socket. if we don't we need to setup our own client connection AND asymetric encryption
                 self.sockets_info["inbound_sockets"][inbound_socket] = {}  # setup a dictionary we can append information on the specific client to tied to the socket object.
                 self.sockets_info["inbound_sockets"][inbound_socket]["address"] = address
 
