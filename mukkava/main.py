@@ -1,17 +1,20 @@
 '''
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 MODULE PURPOSE:
+    Simple program main menu
+    taking user input for items required to setup connection
+    ensuring user input is clean and fits the application
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 MODULE NOTES:
-
-TODO:
-    #ENCRYPTION - EXCEPTION HANDLING
-    #Consider moving back to .conf (not needed, look at toml sections)
-    #peer address validation as ipv4 compliant
+N/A
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 MODULE TEST CODE:
+Simply run main.py :)
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 DISSERTATION NOTES:
+Ncurses - Ncurses was considered but dropped due to me not seeing any percievable benefit of a terminal text client, over a slightly more fancy terminal text client, that would ineviitably
+          have to be rewritten to accomadate a GUI library.
+pysimpleGUI - pysimpleGUI was tested and seemed promisng but was dropped due to time constraints.
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 '''
 

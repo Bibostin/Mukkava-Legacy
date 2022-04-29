@@ -1,6 +1,10 @@
 """
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 MODULE PURPOSE:
+    TCP Stack - for sending mukkava aplication data, and text chat securely.
+    
+    UDP Stack - for sending VOIP data securely.
+        TBR
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 MODULE NOTES:
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -18,11 +22,14 @@ def socket_send(clientsocket, encryption, data):  # Send supplied data down supp
     data = encryption.encrypt(data)
     header = encryption.encrypt(f"{len(data):<{mukkava_encryption.message_length_hsize}}")
     clientsocket.send(header + data)
+    #except: TypeError:
+    #ConnectionResetError:
 
 
 def socket_recieve(clientsocket, encryption):  # Recieve data from supplied socket decrypting with supplied encryption method
     message_length = int(encryption.decrypt(clientsocket.recv(encryption.encrypted_hsize)))
     return encryption.decrypt(clientsocket.recv(message_length))
+
 
 
 class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets

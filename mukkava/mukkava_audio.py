@@ -5,6 +5,8 @@ MODULE PURPOSE:
     Flac encoding and decoding
     Audio recording for outbound packets
     Mixing inbound packets into a single source for audio playback
+
+    Testing files for implementing this module can be found in /testing/first_party_tests/sounddevice_experimentation
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 MODULE NOTES:
     Latency = blocksize (buffer size) / sample rate nominally, this programs latency (excluding network travel time / mixing) with the current default values is 5.3ms, not bad.
@@ -26,7 +28,7 @@ MODULE NOTES:
 MODULE TEST CODE:
     #Note because sd does not allow for multiple streams to access the same input device we cannot locally test mixing, however if you look at sd_mixing.py the theory is the same,
     #the bellow code merely verifies the audio stack is working as intended.
-    audiosetup()
+     audiosetup()
     audio_in = AudioInput()
     audio_out = AudioOutput()
 
@@ -35,19 +37,19 @@ MODULE TEST CODE:
     audio_in.instream.start()
     audio_out.outstream.start()
 
+    print("now in audio stream loop, talk to hear latency of audio with encoding, decoding and faux mixing")
     while True:
-        print("now in audio stream loop, talk to hear latency of audio with encoding, decoding and faux mixing")
         audio_out_buffer_instance1.put(audio_in.data_buffer.get())
         audio_out.process_input()
 
-    #You can find the rough expected charecter size of each piece of encoded input device audio data with the following code, useful for determining headersize. the current setup ranges
-    #from 1200 to 2200~ thus a minimum of 3 charecters (or bytes rather) are needed for headersize as 3^8 = 6561 but 2^8 = 256
-        input = mukkava_audio.AudioInput()
-        input.instream.start()
-        while True:
-            encoded_data = input.data_buffer.get()
-            print(encoded_data)
-            print(len(encoded_data))
+    #You can find the rough expected charecter size of each piece of encoded input device audio data with the following code, useful for determining the required length of theunencrypted headersize.
+    #the current setup ranges from 1200 to 2200~ thus a minimum of 3 charecters (or bytes rather) are needed for headersize as 3^8 = 6561 but 2^8 = 256
+    audio_in = AudioInput()
+    audio_in.instream.start()
+    while True:
+        encoded_data = audio_in.data_buffer.get()
+        print(encoded_data)
+        print(len(encoded_data))
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 DISSERTATION NOTES:
 https://github.com/TaylorSMarks/playsound - considered, but not used due to a lack of ability recording.
@@ -134,3 +136,4 @@ class AudioOutput:  # Sets up a sound device output stream & flacc decoder. take
     def outstream_callback(self, outdata, frames, sd_time, status):  # called by outstream to fetch new audio data autonmously from the above, if data is present in the playback buffer, its fed into the outputstream.
         if not self.data_playback_buffer.empty():
             outdata[:] = self.data_playback_buffer.get_nowait()
+

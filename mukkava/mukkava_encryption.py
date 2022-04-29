@@ -42,7 +42,7 @@ MODULE TEST CODE:
     text = test.decrypt(text)  # reciever side
     print (text)
 
-    #ASYMETRIC (This example doesnt account for symetric transfer of npk and nvkb and is for illustration purposes)
+    #ASYMETRIC (This example doesnt account for symetric transfer of npkb and nvkb and is for illustration purposes, look at mukkava socket, or testing/socket_experimentation/5*)
     test2 = Asymetric()  # one side of the exchange
     test3 = Asymetric()  # second side of the exchange
     test2.setup(test3.public_encryption_key, test3.public_verify_key_bytes)
@@ -53,7 +53,7 @@ MODULE TEST CODE:
     print(text)
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 DISSERTATION NOTES:
-    FURTHER DEVELOPMENT: See flaws section of Module
+    FURTHER DEVELOPMENT: See module notes
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 """
 import nacl.utils
