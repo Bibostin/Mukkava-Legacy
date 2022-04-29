@@ -61,14 +61,13 @@ import nacl.secret
 from nacl.public import PrivateKey, Box
 from nacl.signing import SigningKey, VerifyKey
 
-
 #Message header constants - Used to add fixed length padding to the header fields so sockets know how much data to recieve Padding_test in first_party_tests shows this well.
 message_length_hsize = 4  # constant variable for the message length section of the header in charecter bytes.
 message_type_hsize = 4  # constant variable for the size of the message type section of the header
 
 class Symetric:  # Symetric encryption (Xsalsa20) and MAC authentication (Poly1305) to encode / decode data. created globally and used initally for all sockets
     def __init__(self, password):
-        self.encrypted_hsize = 40 + message_length_hsize  # constant variable for the expected charecter byte size of an individualy symetricaly encrypted header section. Encryption is done individually due to how MACs and DigSigs work.
+        self.encrypted_hsize = 40 + message_length_hsize  # constant variable for the expected charecter byte size of an individualy symetricaly encrypted header section. Encryption is done individually as we cannot partially decrypt a section of a encrypted message
         self.key = b''
         if len(password) < 12:
             raise ValueError("Supplied password must have a charecter length greater then 10 charecters") # This is an arbitrary length, it would be better to use a perfectly random 32 byte key but this is hard to remember in practice, we want to encourage the user to memorise the password rather then store it where it could potentially be compromised.
@@ -91,21 +90,21 @@ class Symetric:  # Symetric encryption (Xsalsa20) and MAC authentication (Poly13
 class Asymetric:  # Asymetric encryption (Curve25519) and  digital signatures (ED25519) to encode / decode data. A new keypair / instance is used per socket session for greater security.
     def __init__(self):
         self.encrypted_hsize = 104 + message_length_hsize  # constant variable for the expected charecter byte size of an individualy asymetrically encrypted header section. Encryption is done individually due to how MACs and DigSigs work.
-        self.private_decryption_key = PrivateKey.generate()
-        self.public_encryption_key = self.private_decryption_key.public_key
-        self.public_encryption_key_bytes = self.public_encryption_key.encode()
-        self.neighbor_public_key = None
-        self.asymetric_box = None
+        self.private_decryption_key = PrivateKey.generate()  # generate Private key pair
+        self.public_encryption_key = self.private_decryption_key.public_key  # Fetch the public key
+        self.public_encryption_key_bytes = self.public_encryption_key.encode()  #serialised the public key for network transmission during handshake
+        self.neighbor_public_key = None  # This will be recieved durin the handshake
+        self.asymetric_box = None  #this will be created after the handshake
 
-        self.private_signing_key = SigningKey.generate()
-        self.public_verify_key = self.private_signing_key.verify_key
-        self.public_verify_key_bytes = self.private_signing_key.verify_key.encode()
+        self.private_signing_key = SigningKey.generate()  # Generate a new pair of keys for digital signing
+        self.public_verify_key = self.private_signing_key.verify_key  # ditto of public encryption key, but for verifying message signature
+        self.public_verify_key_bytes = self.private_signing_key.verify_key.encode()  # Again, we must serialise this for transmission
         self.neighbor_verify_key = None
 
     def setup(self, npkb, nvkb):  # this function initalises the Asymetric instance for actual usage once the neighbor has sent their npk and nvk with symetric encryption
-        self.neighbor_public_key = nacl.public.PublicKey(npkb)
-        self.neighbor_verify_key = VerifyKey(nvkb)
-        self.asymetric_box = Box(self.private_decryption_key, self.neighbor_public_key)
+        self.neighbor_public_key = nacl.public.PublicKey(npkb)  # Turn npkb back into a public key
+        self.neighbor_verify_key = VerifyKey(nvkb)  # turn nvkb back into a public verify key
+        self.asymetric_box = Box(self.private_decryption_key, self.neighbor_public_key)  #create our asymetric box using our own private key and the recieved public key
 
     def encrypt(self, data):  # Asymetrically encrypt data. expects bytestream input
         if not isinstance(data, bytes):

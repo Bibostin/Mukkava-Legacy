@@ -22,11 +22,9 @@ import ipaddress
 from mukkava_audio import audiosetup
 import mukkava_socket
 
-
-
 print(".___  ___.  __    __   __  ___  __  ___      ___   ____    ____  ___ \n"
-      "|   \/   | |  |  |  | |  |/  / |  |/  /     /   \  \   \  /   / /   \ Simple, direct P2P voip client\n"
-      "|  \  /  | |  |  |  | |  '  /  |  '  /     /  ^  \  \   \/   / /  ^  \ Made by Zachary SC Goggin\n"
+      "|   \/   | |  |  |  | |  |/  / |  |/  /     /   \  \   \  /   / /   \  A Simple, E2E encrypted, direct P2P voip client\n"
+      "|  \  /  | |  |  |  | |  '  /  |  '  /     /  ^  \  \   \/   / /  ^  \ Made by Zachary SC Goggin, UP893303\n"
       "|  |\/|  | |  |  |  | |    <   |    <     /  /_\  \  \      / /  /_\  \ ver 0.1 - 25/04/2022\n"
       "|  |  |  | |  `--'  | |  .  \  |  .  \   /  _____  \  \    / /  _____  \ \n"
       "|__|  |__|  \______/  |__|\__\ |__|\__\ /__/     \__\  \__/ /__/     \__\ ")
@@ -40,8 +38,7 @@ while True:
 
 while True:
     username = input("Please enter a username to use for text chat: ")
-    if len(username) >= 2:
-        break
+    if len(username) >= 2: break
     print("Username must have atleast two chareters")
 
 
@@ -63,7 +60,7 @@ while True:
         break
     try: port = int(port)
     except ValueError: print("You have entered a floating point value, use an integer"); continue
-    if port in range(1024,65535): break
+    if port in range(1024, 65535): break
     elif port in range(1,1023): print(f"{port} is a typically reserved port number, supply a number between 1024 - 65535")
     else: print(f"{port} is  a invalid port number, supply a number between 1024 - 65535")
 
@@ -76,11 +73,11 @@ while True:
             try: ipaddress.ip_address(inital_peer_address); break
             except ValueError: print(f"\"{inital_peer_address}\" is not a valid IPv4 address")
         tcpstack = mukkava_socket.TCPStack(port, symetricphrase, username)
-        tcpstack.start(inital_peer_address)
+        tcpstack.start_stack(inital_peer_address)
         break
     elif choice == "n" or choice == "N":
         tcpstack = mukkava_socket.TCPStack(port, symetricphrase, username)
-        tcpstack.start()
+        tcpstack.start_stack()
         break
     else: print("Invalid choice input")
 
