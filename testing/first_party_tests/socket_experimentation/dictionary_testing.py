@@ -56,3 +56,14 @@ if (test := check_for_existing_socket("outbound_sockets", placebo_address)):
     print(test["encryption"])
 else:
     print("false")
+
+#because dictionaries are very confusing, I think an object class would work better
+
+client_socket.address = "test"
+class PackedSocket:
+    def __init__(self, socketobj, address, encryption):
+        self.socket = socketobj
+        self.address = address
+        self.encryption = encryption
+
+soc = PackedSocket(client_socket, "faked", "encryption")
