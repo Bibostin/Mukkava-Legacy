@@ -59,7 +59,7 @@ while True:
         port = 9987
         break
     try: port = int(port)
-    except ValueError: print("You have entered a floating point value, use an integer"); continue
+    except ValueError: print("You have entered a floating point or charecter value, use an integer"); continue
     if port in range(1024, 65535): break
     elif port in range(1,1023): print(f"{port} is a typically reserved port number, supply a number between 1024 - 65535")
     else: print(f"{port} is  a invalid port number, supply a number between 1024 - 65535")

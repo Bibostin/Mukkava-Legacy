@@ -49,19 +49,17 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
             address = address[0]  # strip client side port from the address as we dont need it
             print(f"<:connection from {address}")
 
+            self.sockets_info["inbound_sockets"][inbound_socket] = {}  # setup a dictionary we can append information on the specific client to tied to the socket object.
+            self.sockets_info["inbound_sockets"][inbound_socket]["address"] = address
             if not (existing_socket := self.check_for_existing_socket("outbound_sockets", address)):  # check if we have an existing outbound socket key for this given address, if we do, return it and bind its asymetric instance to our inbound socket. if we don't we need to setup our own client connection AND asymetric encryption
-                self.sockets_info["inbound_sockets"][inbound_socket] = {}  # setup a dictionary we can append information on the specific client to tied to the socket object.
-                self.sockets_info["inbound_sockets"][inbound_socket]["address"] = address
-
                 asymetric_instance = mukkava_encryption.Asymetric()  # setup a new asymetric instance for this specific  quad pair of sockets
                 socket_send(inbound_socket, self.symetric, asymetric_instance.public_encryption_key_bytes)
                 socket_send(inbound_socket, self.symetric, asymetric_instance.public_verify_key_bytes)
                 asymetric_instance.setup(socket_recieve(inbound_socket, self.symetric), socket_recieve(inbound_socket, self.symetric))
-
-                self.sockets_info["inbound_sockets"][inbound_socket]["encryption"] = asymetric_instance
+                inbound_socket["encryption"] = asymetric_instance
                 self.outbound_socket_handler(address)  # if address isn't in self.sockets_info["outbound_sockets] we do not have a client going to the opposing server and must create one.
             else:
-                self.sockets_info["inbound_sockets"][inbound_socket]["encryption"] = self.sockets_info["outbound_sockets"][existing_socket]["encryption"]
+                inbound_socket["encryption"] = existing_socket["encryption"]
 
     def outbound_socket_handler(self, address):  # A handler for generating OUTBOUND  (client -> server) socket data streams
         outbound_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # create a TCP socket
@@ -78,18 +76,17 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
             outbound_socket.close()
             return
 
-        if not (existing_socket := self.check_for_existing_socket("inbound_sockets", address)):  # Check if we have an existing inbound socket key for this given adddress, if we don't we need to setup asymetric encryption
             self.sockets_info["outbound_sockets"][outbound_socket] = {}  # setup an dictionary we can append information on the specific client to.
             self.sockets_info["outbound_sockets"][outbound_socket]["address"] = address
-
+        if not (existing_socket := self.check_for_existing_socket("inbound_sockets", address)):  # Check if we have an existing inbound socket key for this given adddress, if we dont this is the first step of the handshake)and we need to setup asymetric encryption
             asymetric_instance = mukkava_encryption.Asymetric()  # setup a new asymetric instance
             asymetric_instance.setup(socket_recieve(outbound_socket, self.symetric), socket_recieve(outbound_socket, self.symetric))
             socket_send(outbound_socket, self.symetric, asymetric_instance.public_encryption_key_bytes)
             socket_send(outbound_socket, self.symetric, asymetric_instance.public_verify_key_bytes)
             self.sockets_info["outbound_sockets"][outbound_socket]["encryption"] = asymetric_instance
         else:
-            print(f"<:found existing to {address}, {self.sockets_info['inbound_sockets'][existing_socket]}")
-            self.sockets_info["outbound_sockets"][outbound_socket]["encryption"] = self.sockets_info["inbound_sockets"][existing_socket]["encryption"]
+            print(f"<:found existing encryption object for {address}")
+            self.sockets_info["outbound_sockets"][outbound_socket] = existing_socket["encryption"]
 
 
 
@@ -106,8 +103,8 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
         while True:
             if self.sockets_info["outbound_sockets"]:
                 for socket in self.sockets_info["outbound_sockets"]:
-                    data = socket_recieve(socket, self.sockets_info["outbound_sockets"][socket]["encryption"])
-                    if data: print(f"<:{self.sockets_info['outbound_sockets'][socket]['address']}:{data}")
+                    data = socket_recieve(socket, socket["encryption"])
+                    if data: print(f"<:{socket['address']}:{data}")
 
 
     #UTILITY FUNCTIONS
