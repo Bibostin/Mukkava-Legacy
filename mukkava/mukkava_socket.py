@@ -34,7 +34,7 @@ class PackedSocket:  # A class that takes a socket object, and packages addressi
         self.socket.send(header + data)
 
     def recieve_data(self):  # Recieve data from supplied packed socket
-        message_length = self.socket.recv(self.socket.encryption.encrypted_hsize)
+        message_length = self.socket.recv(self.encryption.encrypted_hsize)
         message_length = int(self.encryption.decrypt(message_length))
         data = self.socket.recv(message_length)
         return self.encryption.decrypt(data)
