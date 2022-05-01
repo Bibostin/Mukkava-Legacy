@@ -79,10 +79,11 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
             self.sockets_info["inbound_sockets"].append(inbound_socket)
 
     def outbound_socket_handler(self, address):  # A handler for generating OUTBOUND  (client -> server) socket data streams
-        outbound_socket = PackedSocket(socket.socket(socket.AF_INET, socket.SOCK_STREAM), self.symetric)  # create a TCP socket
-        outbound_socket.socket.settimeout(30)  # set the maximum ttl for a socket read, write or connect operation. #TODO change this lower once working
+        outbound_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # create a TCP socket
+        outbound_socket.settimeout(30)  # set the maximum ttl for a socket read, write or connect operation. #TODO change this lower once working
         print(f"<:connecting to {address}:{self.port}")
-        outbound_socket.socket.connect((address, self.port))  # connect the supplied address
+        outbound_socket.connect((address, self.port))  # connect to the supplied address
+        PackedSocket(outbound_socket, self.symetric) #With a outbound socket, we cant generate our packed socket untill the connection has been established
 
         if not (existing_socket := self.check_for_existing_socket("inbound_sockets", address)):  # Check if we have an existing inbound socket key for this given adddress, if we dont this is the first step of the handshake)and we need to setup asymetric encryption
             asymetric_instance = mukkava_encryption.Asymetric()  # setup a new asymetric instance
