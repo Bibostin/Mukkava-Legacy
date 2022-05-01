@@ -72,12 +72,10 @@ while True:
             inital_peer_address = input("Please enter the IPv4 address for your inital peer for the VOIP session (dot-decimal notation): ")
             try: ipaddress.ip_address(inital_peer_address); break
             except ValueError: print(f"\"{inital_peer_address}\" is not a valid IPv4 address")
-        tcpstack = mukkava_socket.TCPStack(port, symetricphrase, username)
-        tcpstack.start_stack(inital_peer_address)
+        tcpstack = mukkava_socket.TCPStack(port, symetricphrase, username, inital_peer_address)
         break
     elif choice == "n" or choice == "N":
         tcpstack = mukkava_socket.TCPStack(port, symetricphrase, username)
-        tcpstack.start_stack()
         break
     else: print("Invalid choice input")
 
