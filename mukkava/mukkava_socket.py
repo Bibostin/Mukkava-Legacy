@@ -65,7 +65,7 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
     def inbound_socket_handler(self):  # A handler for generating INBOUND  (server -> client) socket data streams
         while True:
             inbound_socket = PackedSocket(self.server_socket.accept()[0], self.symetric)
-            print(f"<:connection from {inbound_socket.peer_address}")
+            print(f"<:recieved connection to server from {inbound_socket.peer_address}")
 
             if not (existing_socket := self.check_for_existing_socket("outbound_sockets", inbound_socket.peer_address)):
                 asymetric_instance = mukkava_encryption.Asymetric()  # setup a new asymetric instance for this specific  quad pair of sockets
@@ -81,8 +81,8 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
     def outbound_socket_handler(self, address):  # A handler for generating OUTBOUND  (client -> server) socket data streams
         outbound_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # create a TCP socket
         outbound_socket.settimeout(30)  # set the maximum ttl for a socket read, write or connect operation. #TODO change this lower once working
-        print(f"<:connecting to {address}:{self.port}")
         outbound_socket.connect((address, self.port))  # connect to the supplied address
+        print(f"<:connected to server at {address}:{self.port}")
         outbound_socket = PackedSocket(outbound_socket, self.symetric) #With a outbound socket, we cant generate our packed socket untill the connection has been established
 
         if not (existing_socket := self.check_for_existing_socket("inbound_sockets", address)):  # Check if we have an existing inbound socket key for this given adddress, if we dont this is the first step of the handshake)and we need to setup asymetric encryption
@@ -98,6 +98,6 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
 
     def check_for_existing_socket(self, inbound_or_outbound, address):  # A Simple function for evaluating whether any existing sockets are connected to or originate from the specified address
         for packed_socket in self.sockets_info[inbound_or_outbound]:  # for all the packed sockets in whichever socket type dictionary was specified
-            if address == packed_socket.address:  # check is equal
+            if address == packed_socket.peer_address:  # check is equal
                 return packed_socket  # return the socket that has the address TODO: consider straight up passing the encryption object through to save on eff
         return False  # no socket with that address was present
