@@ -53,16 +53,29 @@ while True:
 
 
 while True:
-    port = (input("Please enter the port you want your mukkava client to listen on / connect over (1024 - 65535): "))
-    if not port:
+    listen_port = (input("Please enter the port you want your mukkava client to listen on  (1024 - 65535): "))
+    if not listen_port:
         print("no port supplied, defaulting to testing port, 9987")
-        port = 9987
+        listen_port = 9987
         break
-    try: port = int(port)
+    try: listen_port = int(listen_port)
     except ValueError: print("You have entered a floating point or charecter value, use an integer"); continue
-    if port in range(1024, 65535): break
-    elif port in range(1,1023): print(f"{port} is a typically reserved port number, supply a number between 1024 - 65535")
-    else: print(f"{port} is  a invalid port number, supply a number between 1024 - 65535")
+    if listen_port in range(1024, 65535): break
+    elif listen_port in range(1,1023): print(f"{listen_port} is a typically reserved port number, supply a number between 1024 - 65535")
+    else: print(f"{listen_port} is  a invalid port number, supply a number between 1024 - 65535")
+
+
+while True:
+    connect_port = (input("Please enter the port you want your mukkava client to connect over (1024 - 65535): "))
+    if not connect_port:
+        print("no port supplied, defaulting to testing port, 9987")
+        connect_port = 9988
+        break
+    try: connect_port = int(connect_port)
+    except ValueError: print("You have entered a floating point or charecter value, use an integer"); continue
+    if connect_port in range(1024, 65535): break
+    elif connect_port in range(1,1023): print(f"{connect_port} is a typically reserved port number, supply a number between 1024 - 65535")
+    else: print(f"{connect_port} is  a invalid port number, supply a number between 1024 - 65535")
 
 
 while True:
@@ -72,10 +85,10 @@ while True:
             inital_peer_address = input("Please enter the IPv4 address for your inital peer for the VOIP session (dot-decimal notation): ")
             try: ipaddress.ip_address(inital_peer_address); break
             except ValueError: print(f"\"{inital_peer_address}\" is not a valid IPv4 address")
-        tcpstack = mukkava_socket.TCPStack(port, symetricphrase, username, inital_peer_address)
+        tcpstack = mukkava_socket.TCPStack(listen_port, connect_port, symetricphrase, username, inital_peer_address)
         break
     elif choice == "n" or choice == "N":
-        tcpstack = mukkava_socket.TCPStack(port, symetricphrase, username)
+        tcpstack = mukkava_socket.TCPStack(listen_port, connect_port, symetricphrase, username)
         break
     else: print("Invalid choice input")
 

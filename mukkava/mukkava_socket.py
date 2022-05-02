@@ -21,7 +21,7 @@ import threading
 import mukkava_encryption
 
 
-class PackedSocket:  # A class that takes a socket object, and packages addressing information and aa asymetric encryption stack into it
+class PackedSocket:  # A class that takes a socket object, and packages addressing information and (eventually) a asymetric encryption stack into it
     def __init__(self, socket_object, symetric_encryption_object):
         self.socket = socket_object
         self.local_address = socket_object.getsockname()[0]
@@ -41,17 +41,18 @@ class PackedSocket:  # A class that takes a socket object, and packages addressi
 
 
 class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
-    def __init__(self, port, symetricphrase, username, initial_address=None):
+    def __init__(self, listen_port, connect_port, symetricphrase, username, initial_address=None):
         self.sockets_info = {"inbound_sockets": [], "outbound_sockets": []}
-        self.port = port  # port supplied in main.py for the server socket to listen on / outbound sockets to connect via
+        self.listen_port = listen_port  # port supplied in main.py for the server socket to listen on
+        self.connect_port = connect_port  # port supplied in main.py for outbound sockets to connect via
         self.symetric = mukkava_encryption.Symetric(symetricphrase)  # A symetric object used for inital handshake TODO: consider moving this out so udp can use it too
         self.username = username  # name supplied in main.py, appended to text messages as part of the message string
 
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # The TCP Stack "bound" socket, accepts connections from inbound sockets and sends out its own outbound sockets to the other clients server_socket if required
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # The TCP Stacks "bound" socket, accepts connections from peer outbound sockets and sends out its own outbound sockets to the other clients server_socket if required
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Force the OS of the system to allow the reuse of the port via socket binding without a delay
-        self.server_socket.bind((socket.gethostbyname(socket.gethostname()), self.port))
+        self.server_socket.bind((socket.gethostbyname(socket.gethostname()), self.listen_port))
         self.server_socket.listen(5)
-        print(f"<:TCP server started on {socket.gethostbyname(socket.gethostname())}:{self.port} waiting for new connections")
+        print(f"<:TCP server started on {socket.gethostbyname(socket.gethostname())}:{self.listen_port} waiting for new connections")
 
         inbound_socket_handler_thread = threading.Thread(target=self.inbound_socket_handler)  # you call the function name NOT AN INSTANCE OF THE FUNCTION such as func()
         inbound_socket_handler_thread.daemon = True
@@ -65,36 +66,41 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
     def inbound_socket_handler(self):  # A handler for generating INBOUND  (server -> client) socket data streams
         while True:
             inbound_socket = PackedSocket(self.server_socket.accept()[0], self.symetric)
-            print(f"<:recieved connection to server from {inbound_socket.peer_address}")
+            print(f"<:IN:recieved connection to server from {inbound_socket.peer_address}")
 
             if not (existing_socket := self.check_for_existing_socket("outbound_sockets", inbound_socket.peer_address)):
+                print(f"<:IN:No existing encryption object found for {inbound_socket.peer_address}")
                 asymetric_instance = mukkava_encryption.Asymetric()  # setup a new asymetric instance for this specific  quad pair of sockets
                 inbound_socket.send_data(asymetric_instance.public_encryption_key_bytes)
                 inbound_socket.send_data(asymetric_instance.public_verify_key_bytes)
                 asymetric_instance.setup(inbound_socket.recieve_data(), inbound_socket.recieve_data())
                 inbound_socket.encryption = asymetric_instance
+                self.sockets_info['inbound_sockets'].append(inbound_socket)  #unlike the outbound_handler, we cant handle for appending the packedsocket object to sock_info as a statement after the if else check for an existing socket as the inbound check calls a instance of outbound handler that NEEDS to know about this socket
                 self.outbound_socket_handler(inbound_socket.peer_address)  # if address isn't in self.sockets_info["outbound_sockets] we do not have a client going to the opposing server and must create one.
             else:
+                print(f"<:IN:found existing encryption object for {inbound_socket.peer_address}")
                 inbound_socket.encryption = existing_socket.encryption
-            self.sockets_info["inbound_sockets"].append(inbound_socket)
+                self.sockets_info['inbound_sockets'].append(inbound_socket)
 
     def outbound_socket_handler(self, address):  # A handler for generating OUTBOUND  (client -> server) socket data streams
         outbound_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # create a TCP socket
         outbound_socket.settimeout(30)  # set the maximum ttl for a socket read, write or connect operation. #TODO change this lower once working
-        outbound_socket.connect((address, self.port))  # connect to the supplied address
-        print(f"<:connected to server at {address}:{self.port}")
+        outbound_socket.connect((address, self.connect_port))  # connect to the supplied address
+        print(f"<:OUT:connected to server at {address}:{self.connect_port}")
         outbound_socket = PackedSocket(outbound_socket, self.symetric) #With a outbound socket, we cant generate our packed socket untill the connection has been established
 
-        if not (existing_socket := self.check_for_existing_socket("inbound_sockets", address)):  # Check if we have an existing inbound socket key for this given adddress, if we dont this is the first step of the handshake)and we need to setup asymetric encryption
+        if not (existing_socket := self.check_for_existing_socket("inbound_sockets", outbound_socket.peer_address)):  # Check if we have an existing inbound socket key for this given adddress, if we dont this is the first step of the handshake)and we need to setup asymetric encryption
+            print(f"<:OUT:No existing encryption object found for {outbound_socket.peer_address}")
             asymetric_instance = mukkava_encryption.Asymetric()  # setup a new asymetric instance
             asymetric_instance.setup(outbound_socket.recieve_data(), outbound_socket.recieve_data())
             outbound_socket.send_data(asymetric_instance.public_encryption_key_bytes)
             outbound_socket.send_data(asymetric_instance.public_verify_key_bytes)
             outbound_socket.encryption = asymetric_instance
         else:
-            print(f"<:found existing encryption object for {address}")
+            print(f"<:OUT:found existing encryption object for {outbound_socket.peer_address}")
             outbound_socket.encryption = existing_socket.encryption
-        self.sockets_info["outbound_sockets"].append(outbound_socket)
+        self.sockets_info['outbound_sockets'].append(outbound_socket)
+        #peer_address_list = outbound_socket.recieve_data()
 
     def check_for_existing_socket(self, inbound_or_outbound, address):  # A Simple function for evaluating whether any existing sockets are connected to or originate from the specified address
         for packed_socket in self.sockets_info[inbound_or_outbound]:  # for all the packed sockets in whichever socket type dictionary was specified
