@@ -69,7 +69,7 @@ while True:
     connect_port = (input("Please enter the port you want your mukkava client to connect over (1024 - 65535): "))
     if not connect_port:
         print("no port supplied, defaulting to testing port, 9987")
-        connect_port = 9988
+        connect_port = 9987
         break
     try: connect_port = int(connect_port)
     except ValueError: print("You have entered a floating point or charecter value, use an integer"); continue
