@@ -1,4 +1,5 @@
-#Packing sockets
+#Packing sockets reperesents a better approach then the dictionary one sshown in dict_test.py in my opinion, as dictionaries are rather cubmersome, confusing
+#and hard to understand EXACTLY in this context, whereas a object is incredibly simple.
 
 import socket
 import mukkava_encryption
