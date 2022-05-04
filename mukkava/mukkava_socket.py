@@ -132,7 +132,7 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
         address_list = []
         if len(self.sockets_info["inbound_sockets"]) > 1:  # as we only call rpal after the peer is setup in sock_info, if theres only one entry, its the peer we are calling rpal for.
             for packed_socket in self.sockets_info["inbound_sockets"]:
-                address_list.append(packed_socket.address)
+                address_list.append(packed_socket.peer_address)
             address_list.remove(peer_address)  # Ensure the address of the peer is not in the sent list (this is checked client side too)
         else: address_list.append("no-other-peers")  # The peer is currently our only connection
         return json.dumps(address_list)  #serialise the list in  quick and secure format for interpritation by the other client.
