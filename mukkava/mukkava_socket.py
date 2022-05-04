@@ -99,27 +99,44 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
         if not (existing_socket := self.check_for_existing_socket("inbound_sockets", outbound_socket.peer_address)):  # Check if we have an existing inbound socket key for this given adddress, if we dont this is the first step of the handshake)and we need to setup asymetric encryption
             print(f"<:OUT:No asymetric encryption object found for {outbound_socket.peer_address}, creating.")
             asymetric_instance = mukkava_encryption.Asymetric()  # setup a new asymetric instance
-            asymetric_instance.setup(outbound_socket.recieve_data(), outbound_socket.recieve_data())
+            asymetric_instance.setup(outbound_socket.recieve_data(), outbound_socket.recieve_data())  # Outbound clients allways recieve npkb and npvb first, then send after
             outbound_socket.send_data(asymetric_instance.public_encryption_key_bytes)
             outbound_socket.send_data(asymetric_instance.public_verify_key_bytes)
             outbound_socket.encryption = asymetric_instance
         else:
-            print(f"<:OUT:found asymetric encryption object for {outbound_socket.peer_address}")
+            print(f"<:OUT:found asymetric encryption object for {outbound_socket.peer_address}")  # we allready have a inbound connection to our server from this address, use the same encryption object as that conenction.
             outbound_socket.encryption = existing_socket.encryption
 
         self.sockets_info['outbound_sockets'].append(outbound_socket)  #this should only happen when a socket is ready to be used by the processor
         peer_address_list = json.loads(outbound_socket.recieve_data())
-        print(f"<:OUT:Recieved current peer address list from {outbound_socket.peer_address}")
 
         if propagate_peers:  # If propagate_peers is true, this our inital outbound connection to an inital peer, so we need to act on the peer address list
+            print(f"<:OUT:Recieved current peer address list from {outbound_socket.peer_address}, propagating now.")
             if peer_address_list[0] == "no-other-peers": print(f"<:OUT:No other peers from {outbound_socket.peer_address}") #if
             else:
                 if outbound_socket.local_address in peer_address_list:  # double check that the remote server hasn't sent us our own local address
                     try:peer_address_list.remove(outbound_socket.local_address)
                     except ValueError: pass  # The server did its job correctly and the address wasn't present.
+                print(f"<:OUT:New peer/s recieved: {peer_address_list}")
                 for peer_address in peer_address_list:
                     self.outbound_socket_handler(peer_address) #initiate a non peer propagating outbound handler for each supplied address, connecting us to all the peers in the voip session.
+        else:print(f"<:OUT:Recieved current peer address list from {outbound_socket.peer_address}, but not propagating.")
 
+
+    def inbound_socket_processor(self, data):  # A function for taking input text data and sending it to all peers in the session.
+        if self.sockets_info["inbound_sockets"]:  # if inbound sockets are present,
+            if data:  # if the supplied data actually has content
+                data = self.username+": " + data  #append username to the data
+                for inbound_socket in self.sockets_info["inbound_sockets"]:  #send the message to all peers
+                    inbound_socket.send_data(data)
+        else: print("<:Not currently connected to any peers.")  # alert the user they are not currently connected to anyone
+
+
+    def outbound_socket_proccesor(self):  # consider switching out select, epoll, kqueues, SELECTOR?
+        if self.sockets_info["outbound_sockets"]:
+            for outbound_socket in self.sockets_info["outbound_sockets"]:
+                data = outbound_socket.recieve_data()
+                if data: print(f"<:{outbound_socket.peer_address}:{data}")
 
 
     def check_for_existing_socket(self, inbound_or_outbound, peer_address):  # A Simple function for evaluating whether any existing sockets are connected to or originate from the specified address
@@ -128,11 +145,12 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
                 return packed_socket  # return the socket that has the address
         return False  # no socket with that address was present
 
-    def return_peer_address_list(self, peer_address):  # A simple function for generating a list of peer addresses to send to a new peer, exluding the peers own address
+    def return_peer_address_list(self, receiving_peer_address):  # A simple function for generating a list of peer addresses to send to a new peer, exluding the peers own address
         address_list = []
         if len(self.sockets_info["inbound_sockets"]) > 1:  # as we only call rpal after the peer is setup in sock_info, if theres only one entry, its the peer we are calling rpal for.
             for packed_socket in self.sockets_info["inbound_sockets"]:
                 address_list.append(packed_socket.peer_address)
-            address_list.remove(peer_address)  # Ensure the address of the peer is not in the sent list (this is checked client side too)
+            address_list.remove(receiving_peer_address)  # Ensure the address of the peer is not in the sent list (this is checked client side too)
         else: address_list.append("no-other-peers")  # The peer is currently our only connection
         return json.dumps(address_list)  #serialise the list in  quick and secure format for interpritation by the other client.
+
