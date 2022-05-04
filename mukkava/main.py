@@ -55,8 +55,8 @@ while True:
 while True:
     listen_port = (input("Please enter the port you want your mukkava client to listen on  (1024 - 65535): "))
     if not listen_port:
-        print("no port supplied, defaulting to testing port, 9987")
         listen_port = 9987
+        print(f"no port supplied, defaulting to testing port, {listen_port}")
         break
     try: listen_port = int(listen_port)
     except ValueError: print("You have entered a floating point or charecter value, use an integer"); continue
@@ -68,8 +68,8 @@ while True:
 while True:
     connect_port = (input("Please enter the port you want your mukkava client to connect over (1024 - 65535): "))
     if not connect_port:
-        print("no port supplied, defaulting to testing port, 9987")
         connect_port = 9987
+        print(f"no port supplied, defaulting to testing port, {connect_port}")
         break
     try: connect_port = int(connect_port)
     except ValueError: print("You have entered a floating point or charecter value, use an integer"); continue
