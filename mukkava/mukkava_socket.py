@@ -22,6 +22,7 @@ import socket
 import threading
 import mukkava_encryption
 import json
+import selectors
 
 
 class PackedSocket:  # A class that takes a socket object, and packages addressing information and (eventually) a asymetric encryption stack into it
@@ -42,6 +43,9 @@ class PackedSocket:  # A class that takes a socket object, and packages addressi
         data = self.socket.recv(message_length)
         return self.encryption.decrypt(data)
 
+    def fileno(self):  #Select and Selector both require this behaviour from objects to function properly, look at learning_select.py for reasoning.
+        return self.socket.fileno()
+
 
 class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
     def __init__(self, listen_port, connect_port, symetricphrase, username, initial_address=None):
@@ -50,6 +54,7 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
         self.connect_port = connect_port  # port supplied in main.py for outbound sockets to connect via
         self.symetric = mukkava_encryption.Symetric(symetricphrase)  # A symetric object used for inital handshake TODO: consider moving this out so udp can use it too
         self.username = username  # name supplied in main.py, appended to text messages as part of the message string
+        self.selector_object = selectors.DefaultSelector()
 
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # The TCP Stacks "bound" socket, accepts connections from peer outbound sockets and sends out its own outbound sockets to the other clients server_socket if required
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Force the OS of the system to allow the reuse of the port via socket binding without a delay
@@ -107,10 +112,10 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
             print(f"<:OUT:found asymetric encryption object for {outbound_socket.peer_address}")  # we allready have a inbound connection to our server from this address, use the same encryption object as that conenction.
             outbound_socket.encryption = existing_socket.encryption
 
-        self.sockets_info['outbound_sockets'].append(outbound_socket)  #this should only happen when a socket is ready to be used by the processor
         peer_address_list = json.loads(outbound_socket.recieve_data())
+        self.sockets_info['outbound_sockets'].append(outbound_socket)  # Socket setup is complete and we are ready for the socket to be operated by the processor
 
-        if propagate_peers:  # If propagate_peers is true, this our inital outbound connection to an inital peer, so we need to act on the peer address list
+        if propagate_peers:  # If propagate_peers is true, this our inital outbound connection to an inital peer, so we need to act on the recieved peer address list
             print(f"<:OUT:Recieved current peer address list from {outbound_socket.peer_address}, propagating now.")
             if peer_address_list[0] == "no-other-peers": print(f"<:OUT:No other peers from {outbound_socket.peer_address}") #if
             else:
@@ -133,10 +138,8 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
 
 
     def outbound_socket_proccesor(self):  # consider switching out select, epoll, kqueues, SELECTOR?
-        if self.sockets_info["outbound_sockets"]:
-            for outbound_socket in self.sockets_info["outbound_sockets"]:
-                data = outbound_socket.recieve_data()
-                if data: print(f"<:{outbound_socket.peer_address}:{data}")
+        events = self.selector_object.select()
+
 
 
     def check_for_existing_socket(self, inbound_or_outbound, peer_address):  # A Simple function for evaluating whether any existing sockets are connected to or originate from the specified address
