@@ -18,6 +18,7 @@ MODULE TEST CODE:
 DISSERTATION NOTES:
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 """
+import ipaddress
 import socket
 import threading
 import mukkava_encryption
@@ -69,7 +70,7 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
         if initial_address:
             self.outbound_socket_handler(initial_address, propagate_peers=True)  # if an initial address was supplied, spin up an outbound socket connecting to that address
         while True:
-            usermsg = input("Chat:> ")
+            self.inbound_socket_processor(input("Chat:> "))
 
     def inbound_socket_handler(self):  # A handler for generating INBOUND  (server -> client) socket data streams
         while True:
@@ -124,7 +125,10 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
                     except ValueError: pass  # The server did its job correctly and the address wasn't present.
                 print(f"<:OUT:New peer/s recieved: {peer_address_list}")
                 for peer_address in peer_address_list:
-                    self.outbound_socket_handler(peer_address) #initiate a non peer propagating outbound handler for each supplied address, connecting us to all the peers in the voip session.
+                    try:
+                        ipaddress.ip_address(peer_address)
+                        self.outbound_socket_handler(peer_address) #initiate a non peer propagating outbound handler for each supplied address, connecting us to all the peers in the voip session.
+                    except ValueError: print(f"<:OUT: Bad address \"{peer_address}\" in address list, malicious peer?")
         else:print(f"<:OUT:Recieved current peer address list from {outbound_socket.peer_address}, but not propagating.")
 
 
