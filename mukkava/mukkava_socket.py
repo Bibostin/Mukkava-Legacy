@@ -114,8 +114,10 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
             outbound_socket.encryption = existing_socket.encryption
 
         self.sockets_info['outbound_sockets'].append(outbound_socket)  # Socket setup is complete and we are ready for the socket to be operated by the processor
-        peer_address_list = json.loads(outbound_socket.recieve_data())
+        outbound_processor = threading.Thread(target=self.outbound_socket_proccesor, args=outbound_socket)
+        outbound_processor.start()
 
+        peer_address_list = json.loads(outbound_socket.recieve_data())
 
         if propagate_peers:  # If propagate_peers is true, this our inital outbound connection to an inital peer, so we need to act on the recieved peer address list
             print(f"<:OUT:Recieved current peer address list from {outbound_socket.peer_address}, propagating now.")
@@ -133,6 +135,7 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
         else:print(f"<:OUT:Recieved current peer address list from {outbound_socket.peer_address}, but not propagating.")
 
 
+
     def inbound_socket_processor(self, data):  # A function for taking input text data and sending it to all peers in the session.
         if self.sockets_info["inbound_sockets"]:  # if inbound sockets are present,
             if data:  # if the supplied data actually has content
@@ -142,9 +145,12 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
         else: print("<:Not currently connected to any peers.")  # alert the user they are not currently connected to anyone
 
 
-    def outbound_socket_proccesor(self):  # consider switching out select, epoll, kqueues, SELECTOR?
-        events = self.selector_object.select()
-
+    def outbound_socket_proccesor(self, outbound_socket):  # consider switching out select, epoll, kqueues, SELECTOR?
+        data = outbound_socket.recieve_data()
+        if data:
+            try: print(f"<:{outbound_socket.peer_address}:{data}")
+            except ValueError: print(f"<:OUT: Recieved garbled message from {outbound_socket.peer_address}")
+        #handle for a presumed dead socket
 
     def check_for_existing_socket(self, inbound_or_outbound, peer_address):  # A Simple function for evaluating whether any existing sockets are connected to or originate from the specified address
         for packed_socket in self.sockets_info[inbound_or_outbound]:  # for all the packed sockets in whichever socket type dictionary was specified
