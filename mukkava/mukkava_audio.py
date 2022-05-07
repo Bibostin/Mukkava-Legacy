@@ -75,7 +75,7 @@ def audiosetup():  # Responsible for inital audio device listing, setup and test
     print(f"available devices to use are bellow: \n{sd.query_devices()} \nDefault devices (input, output) are currently set to: {sd.default.device}")
     while True:
         try: sd.default.device = int(input("Desired input device ID: ")), int(input("Desired output device ID: ")); break
-        except: print("supplied device id is a charecter, supply a numeric value")
+        except ValueError: print("supplied device id is a charecter, supply a numeric value")
     print(f"Default devices were set to: {sd.default.device}")
     input("Hit enter to test recording via input device ")
     test = sd.rec(3 * sd.default.samplerate)

@@ -113,8 +113,9 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
             print(f"<:OUT:found asymetric encryption object for {outbound_socket.peer_address}")  # we allready have a inbound connection to our server from this address, use the same encryption object as that conenction.
             outbound_socket.encryption = existing_socket.encryption
 
-        peer_address_list = json.loads(outbound_socket.recieve_data())
         self.sockets_info['outbound_sockets'].append(outbound_socket)  # Socket setup is complete and we are ready for the socket to be operated by the processor
+        peer_address_list = json.loads(outbound_socket.recieve_data())
+
 
         if propagate_peers:  # If propagate_peers is true, this our inital outbound connection to an inital peer, so we need to act on the recieved peer address list
             print(f"<:OUT:Recieved current peer address list from {outbound_socket.peer_address}, propagating now.")
@@ -143,7 +144,6 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
 
     def outbound_socket_proccesor(self):  # consider switching out select, epoll, kqueues, SELECTOR?
         events = self.selector_object.select()
-
 
 
     def check_for_existing_socket(self, inbound_or_outbound, peer_address):  # A Simple function for evaluating whether any existing sockets are connected to or originate from the specified address
