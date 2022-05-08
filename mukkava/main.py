@@ -35,9 +35,12 @@ print(".___  ___.  __    __   __  ___  __  ___      ___   ____    ____  ___ \n"
 while True:
     choice = input("would you like to set and test your audio devices? (system defaults will be used otherwise) y/n: ")
     if choice == "y" or choice == "Y":
-        try: audiosetup()
-        except: sounddevice.PortAudioError()
-        break
+        try:
+            audiosetup()
+            break
+        except sounddevice.PortAudioError():
+            print("failed to query the set device, make sure you specify a valid device ID!")
+            quit()
     elif choice == "n" or choice == "N": break
     else: print("Invalid choice input")
 

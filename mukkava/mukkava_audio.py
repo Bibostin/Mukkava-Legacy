@@ -78,20 +78,13 @@ def audiosetup():  # Responsible for inital audio device listing, setup and test
         except ValueError: print("supplied device id is a charecter, supply a numeric value")
     print(f"Default devices were set to: {sd.default.device}")
     input("Hit enter to test recording via input device ")
-    try:
-        test = sd.rec(3 * sd.default.samplerate)
-        print("RECORDING")
-        sd.wait()
-    except sounddevice.PortAudioError:
-        print("failed to query this input device, make sure you specify a valid device ID!")
-
-    try:
-        input("Hit enter to test playback via output device ")
-        sd.play(test)
-        print("PLAYING")
-        sd.wait()
-    except sounddevice.PortAudioError:
-        print("failed to query this output device, make sure you specify a valid device ID!")
+    test = sd.rec(3 * sd.default.samplerate)
+    print("RECORDING")
+    sd.wait()
+    input("Hit enter to test playback via output device ")
+    sd.play(test)
+    print("PLAYING")
+    sd.wait()
 
 
 class AudioInput:  # Sets up a sound device input stream & flacc encoder. instream generates input audio data, passes it to flac which encodes it, then puts it in a queue for serialisation.
