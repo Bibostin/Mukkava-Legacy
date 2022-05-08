@@ -32,6 +32,7 @@ class PackedSocket:  # A class that takes a socket object, and packages addressi
         self.local_address = socket_object.getsockname()[0]
         self.peer_address = socket_object.getpeername()[0]
         self.encryption = symetric_encryption_object
+        self.operation_flag = False
 
     def send_data(self, data):  # Send supplied data down a packed socket with its current encryption scheme
         data = self.encryption.encrypt(data)
@@ -66,6 +67,9 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
         inbound_socket_handler_thread.daemon = True
         inbound_socket_handler_thread.start()
 
+        # outbound_processor_thread = threading.Thread(target=self.outbound_socket_proccesor)
+        # outbound_processor_thread.daemon = True
+        # outbound_processor_thread.start()
 
         if initial_address:
             self.outbound_socket_handler(initial_address, propagate_peers=True)  # if an initial address was supplied, spin up an outbound socket connecting to that address
@@ -94,6 +98,7 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
             address_list = self.return_peer_address_list(inbound_socket.peer_address)
             inbound_socket.send_data(address_list)
             print(f"<:IN:Sent current peer address list to {inbound_socket.peer_address}")
+            inbound_socket.operation_flag = True
 
     def outbound_socket_handler(self, address, propagate_peers=False):  # A handler for generating OUTBOUND  (client -> server) socket data streams
         outbound_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # create a TCP socket
@@ -113,7 +118,7 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
             print(f"<:OUT:found asymetric encryption object for {outbound_socket.peer_address}")  # we allready have a inbound connection to our server from this address, use the same encryption object as that conenction.
             outbound_socket.encryption = existing_socket.encryption
 
-        self.sockets_info['outbound_sockets'].append(outbound_socket)  # Socket setup is complete and we are ready for the socket to be operated by the processor
+        self.sockets_info['outbound_sockets'].append(outbound_socket)  # Socket setup is complete, but not ready for processor operation just yet
         peer_address_list = json.loads(outbound_socket.recieve_data())
 
         if propagate_peers:  # If propagate_peers is true, this our inital outbound connection to an inital peer, so we need to act on the recieved peer address list
@@ -129,11 +134,9 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
                         ipaddress.ip_address(peer_address)
                         self.outbound_socket_handler(peer_address)  # initiate a non peer propagating outbound handler for each supplied address, connecting us to all the peers in the voip session.
                     except ValueError: print(f"<:OUT: Bad address \"{peer_address}\" in address list, malicious peer?")
-
-            outbound_processor_thread = threading.Thread(target=self.outbound_socket_proccesor)
-            outbound_processor_thread.daemon = True
-            outbound_processor_thread.start()
         else: print(f"<:OUT:Recieved current peer address list from {outbound_socket.peer_address}, but not propagating.")
+        outbound_socket.operation_flag = True # The socket is ready for operation.
+
 
 
     def inbound_socket_processor(self, data):  # A function for taking input text data and sending it to all peers in the session.
@@ -141,7 +144,8 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
             if data:  # if the supplied data actually has content
                 data = self.username+": " + data  # append username to the data
                 for inbound_socket in self.sockets_info["inbound_sockets"]:  # send the message to all peers
-                    inbound_socket.send_data(data)
+                    if inbound_socket.operation_flag is True:
+                        inbound_socket.send_data(data)
         else: print("<:Not currently connected to any peers.")  # alert the user they are not currently connected to anyone
 
     def outbound_socket_proccesor(self):  # consider switching out select, epoll, kqueues, SELECTOR?
@@ -149,8 +153,9 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
             if self.sockets_info["outbound_sockets"]:
                 readable_sockets, _, errored_sockets = select.select(self.sockets_info["outbound_sockets"],  [], self.sockets_info["outbound_sockets"], 5)
                 for outbound_socket in readable_sockets:
-                    data = outbound_socket.recieve_data()
-                    print(f"<:OUT:{outbound_socket.peer_address}:{data}")
+                    if outbound_socket.operation_flag is True:
+                        data = outbound_socket.recieve_data()
+                        print(f"<:OUT:{outbound_socket.peer_address}: {data}")
 
                 for outbound_socket in errored_sockets:
                     outbound_socket.socket.close()
