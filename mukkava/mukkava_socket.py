@@ -67,9 +67,9 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
         inbound_socket_handler_thread.daemon = True
         inbound_socket_handler_thread.start()
 
-        # outbound_processor_thread = threading.Thread(target=self.outbound_socket_proccesor)
-        # outbound_processor_thread.daemon = True
-        # outbound_processor_thread.start()
+        outbound_processor_thread = threading.Thread(target=self.outbound_socket_proccesor)
+        outbound_processor_thread.daemon = True
+        outbound_processor_thread.start()
 
         if initial_address:
             self.outbound_socket_handler(initial_address, propagate_peers=True)  # if an initial address was supplied, spin up an outbound socket connecting to that address
