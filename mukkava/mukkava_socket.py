@@ -150,7 +150,7 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
                 readable_sockets, _, errored_sockets = select.select(self.sockets_info["outbound_sockets"],  [], self.sockets_info["outbound_sockets"], 5)
                 for outbound_socket in readable_sockets:
                     data = outbound_socket.recieve_data()
-                    print(data)
+                    print(f"<:OUT:{outbound_socket.peer_address}:{data}")
 
                 for outbound_socket in errored_sockets:
                     outbound_socket.socket.close()
