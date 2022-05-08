@@ -63,11 +63,9 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
         print(f"<:TCP server started on {socket.gethostbyname(socket.gethostname())}:{self.listen_port} waiting for new connections")
 
         inbound_socket_handler_thread = threading.Thread(target=self.inbound_socket_handler)  # you call the function name NOT AN INSTANCE OF THE FUNCTION such as func()
-        outbound_processor_thread = threading.Thread(target=self.outbound_socket_proccesor)
         inbound_socket_handler_thread.daemon = True
-        outbound_processor_thread.daemon = True
         inbound_socket_handler_thread.start()
-        outbound_processor_thread.start()
+
 
         if initial_address:
             self.outbound_socket_handler(initial_address, propagate_peers=True)  # if an initial address was supplied, spin up an outbound socket connecting to that address
@@ -131,6 +129,10 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
                         ipaddress.ip_address(peer_address)
                         self.outbound_socket_handler(peer_address)  # initiate a non peer propagating outbound handler for each supplied address, connecting us to all the peers in the voip session.
                     except ValueError: print(f"<:OUT: Bad address \"{peer_address}\" in address list, malicious peer?")
+
+            outbound_processor_thread = threading.Thread(target=self.outbound_socket_proccesor)
+            outbound_processor_thread.daemon = True
+            outbound_processor_thread.start()
         else: print(f"<:OUT:Recieved current peer address list from {outbound_socket.peer_address}, but not propagating.")
 
 
@@ -145,7 +147,7 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
     def outbound_socket_proccesor(self):  # consider switching out select, epoll, kqueues, SELECTOR?
         while True:
             if self.sockets_info["outbound_sockets"]:
-                readable_sockets, _, errored_sockets = select.select(self.sockets_info["outbound_sockets"],  [], self.sockets_info["outbound_sockets"], 60)
+                readable_sockets, _, errored_sockets = select.select(self.sockets_info["outbound_sockets"],  [], self.sockets_info["outbound_sockets"], 5)
                 for outbound_socket in readable_sockets:
                     data = outbound_socket.recieve_data()
                     print(data)
