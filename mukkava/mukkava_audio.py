@@ -59,7 +59,7 @@ https://github.com/TeamPyOgg/PyOgg - not feature complete, doesn't have an encod
 https://github.com/Zuzu-Typ/PyOpenAL - Tested, but decided not to use as it doesn't have support for openAL's recording functions, Streaming audio seems funky too.
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 """
-
+import sounddevice
 import sounddevice as sd  # Sound device, portaudio wrapper for recording and playback of audio
 import numpy; assert numpy  # numpy is utilised by sounddevice, but sounddevice doesn't show this to the interpreter so we have to assert it to stop pep warnings
 import pyflac  # Python implementation of the flac standard, used for encoding and decoding
@@ -78,13 +78,20 @@ def audiosetup():  # Responsible for inital audio device listing, setup and test
         except ValueError: print("supplied device id is a charecter, supply a numeric value")
     print(f"Default devices were set to: {sd.default.device}")
     input("Hit enter to test recording via input device ")
-    test = sd.rec(3 * sd.default.samplerate)
-    print("RECORDING")
-    sd.wait()
-    input("Hit enter to test playback via output device ")
-    sd.play(test)
-    print("PLAYING")
-    sd.wait()
+    try:
+        test = sd.rec(3 * sd.default.samplerate)
+        print("RECORDING")
+        sd.wait()
+    except sounddevice.PortAudioError:
+        print("failed to query this input device, make sure you specify a valid device ID!")
+
+    try:
+        input("Hit enter to test playback via output device ")
+        sd.play(test)
+        print("PLAYING")
+        sd.wait()
+    except sounddevice.PortAudioError:
+        print("failed to query this output device, make sure you specify a valid device ID!")
 
 
 class AudioInput:  # Sets up a sound device input stream & flacc encoder. instream generates input audio data, passes it to flac which encodes it, then puts it in a queue for serialisation.

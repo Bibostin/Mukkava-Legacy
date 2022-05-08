@@ -125,7 +125,7 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
 
         if propagate_peers:  # If propagate_peers is true, this our inital outbound connection to an inital peer, so we need to act on the recieved peer address list
             print(f"<:OUTh:Recieved current peer address list from {outbound_socket.peer_address}, propagating now.")
-            if peer_address_list[0] == "no-other-peers": print(f"<:OUT:No other peers from {outbound_socket.peer_address}")  # if
+            if peer_address_list[0] == "no-other-peers": print(f"<:OUTh:No other peers from {outbound_socket.peer_address}")  # if
             else:
                 if outbound_socket.local_address in peer_address_list:  # double check that the remote server hasn't sent us our own local address
                     try: peer_address_list.remove(outbound_socket.local_address)

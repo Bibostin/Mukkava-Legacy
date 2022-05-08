@@ -19,6 +19,9 @@ pysimpleGUI - pysimpleGUI was tested and seemed promisng but was dropped due to 
 '''
 
 import ipaddress
+
+import sounddevice
+
 from mukkava_audio import audiosetup
 import mukkava_socket
 
@@ -31,7 +34,10 @@ print(".___  ___.  __    __   __  ___  __  ___      ___   ____    ____  ___ \n"
 
 while True:
     choice = input("would you like to set and test your audio devices? (system defaults will be used otherwise) y/n: ")
-    if choice == "y" or choice == "Y": audiosetup(); break
+    if choice == "y" or choice == "Y":
+        try: audiosetup()
+        except: sounddevice.PortAudioError()
+        break
     elif choice == "n" or choice == "N": break
     else: print("Invalid choice input")
 
