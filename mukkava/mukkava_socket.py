@@ -144,7 +144,7 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
             if data:  # if the supplied data actually has content
                 data = self.username+": " + data  # append username to the data
                 for inbound_socket in self.sockets_info["inbound_sockets"]:  # send the message to all peers
-                    if inbound_socket.operation_flag is True:
+                    if inbound_socket.operation_flag == True:
                         inbound_socket.send_data(data)
         else: print("<:Not currently connected to any peers.")  # alert the user they are not currently connected to anyone
 
@@ -153,7 +153,7 @@ class TCPStack:  # IPv4 TCP Socket stack for receiving text and command packets
             if self.sockets_info["outbound_sockets"]:
                 readable_sockets, _, errored_sockets = select.select(self.sockets_info["outbound_sockets"],  [], self.sockets_info["outbound_sockets"], 5)
                 for outbound_socket in readable_sockets:
-                    if outbound_socket.operation_flag is True:
+                    if outbound_socket.operation_flag == True:
                         data = outbound_socket.recieve_data()
                         print(f"<:OUT:{outbound_socket.peer_address}: {data}")
 
