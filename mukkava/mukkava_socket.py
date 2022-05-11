@@ -36,8 +36,7 @@ class PackedSocket:  # A class that takes a socket object, and packages addressi
         self.encryption = encryption_object  # set the inital encryption box to that of the symetric object you pass in (to be replaced by an asymetric)
         self.operation_flag = False  # A flag for stopping race conditions that create issues between handlers and active processors, set to True when a socket is ready for processing.
         self.local_address = socket_object.getsockname()[0]  # store local address of the socket in a easer to reach location
-
-        if socket_object.type == "SocketKind.SOCK_STREAM": self.peer_address = socket_object.getpeername()[0]
+        if socket_object.type == socket.SocketKind.SOCK_STREAM: self.peer_address = socket_object.getpeername()[0]
         else: self.peer_address = peer_address
 
         if audio_out_buffer_instance:
