@@ -19,9 +19,7 @@ pysimpleGUI - pysimpleGUI was tested and seemed promisng but was dropped due to 
 '''
 
 import ipaddress
-
 import sounddevice
-
 from mukkava_audio import audiosetup
 import mukkava_socket
 
@@ -62,29 +60,16 @@ while True:
 
 
 while True:
-    listen_port = (input("Please enter the port you want your mukkava client to listen on  (1024 - 65535): "))
-    if not listen_port:
-        listen_port = 9987
-        print(f"no port supplied, defaulting to testing port, {listen_port}")
+    port = (input("Please enter the port you want your mukkava client to use  (1024 - 65535): "))
+    if not port:
+        port = 9987
+        print(f"no port supplied, defaulting to testing port, {port}")
         break
-    try: listen_port = int(listen_port)
+    try: listen_port = int(port)
     except ValueError: print("You have entered a floating point or charecter value, use an integer"); continue
-    if listen_port in range(1024, 65535): break
-    elif listen_port in range(1,1023): print(f"{listen_port} is a typically reserved port number, supply a number between 1024 - 65535")
-    else: print(f"{listen_port} is  a invalid port number, supply a number between 1024 - 65535")
-
-
-while True:
-    connect_port = (input("Please enter the port you want your mukkava client to connect over (1024 - 65535): "))
-    if not connect_port:
-        connect_port = 9987
-        print(f"no port supplied, defaulting to testing port, {connect_port}")
-        break
-    try: connect_port = int(connect_port)
-    except ValueError: print("You have entered a floating point or charecter value, use an integer"); continue
-    if connect_port in range(1024, 65535): break
-    elif connect_port in range(1,1023): print(f"{connect_port} is a typically reserved port number, supply a number between 1024 - 65535")
-    else: print(f"{connect_port} is  a invalid port number, supply a number between 1024 - 65535")
+    if port in range(1024, 65535): break
+    elif port in range(1,1023): print(f"{port} is a typically reserved port number, supply a number between 1024 - 65535")
+    else: print(f"{port} is  a invalid port number, supply a number between 1024 - 65535")
 
 
 while True:
@@ -94,10 +79,10 @@ while True:
             inital_peer_address = input("Please enter the IPv4 address for your inital peer for the VOIP session (dot-decimal notation): ")
             try: ipaddress.ip_address(inital_peer_address); break
             except ValueError: print(f"\"{inital_peer_address}\" is not a valid IPv4 address")
-        tcpstack = mukkava_socket.TCPStack(listen_port, connect_port, symetricphrase, username, inital_peer_address)
+        Netstack = mukkava_socket.NetStack(port, symetricphrase, username, inital_peer_address)
         break
     elif choice == "n" or choice == "N":
-        tcpstack = mukkava_socket.TCPStack(listen_port, connect_port, symetricphrase, username)
+        Netstack = mukkava_socket.NetStack(port, symetricphrase, username)
         break
     else: print("Invalid choice input")
 
