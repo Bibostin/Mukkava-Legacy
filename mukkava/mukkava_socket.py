@@ -30,18 +30,13 @@ audio_in = mukkava_audio.AudioInput()  # Set up our audio input (microphone-> pe
 audio_out = mukkava_audio.AudioOutput()  # Set up our audio output (peer -> speaker) decoder and stream handler
 
 
-class PackedSocket:  # A class that takes a socket object, and packages addressing information and (eventually) a asymetric encryption stack into it
-    def __init__(self, socket_object, encryption_object, peer_address=None, audio_out_buffer_instance=False):
+class TCPPackedSocket:  # A class that takes a socket object, and packages information relating to its operation as part of NetStack.
+    def __init__(self, socket_object, encryption_object):
         self.socket = socket_object  # pack the supplied socket
-        self.encryption = encryption_object  # set the inital encryption box to that of the symetric object you pass in (to be replaced by an asymetric)
-        self.operation_flag = False  # A flag for stopping race conditions that create issues between handlers and active processors, set to True when a socket is ready for processing.
+        self.encryption = encryption_object  # for a tcp socket this will be a symetric object initally, then a asymetric after handshake.
+        self.operation_flag = False  # A flag for stopping race conditions that create issues between the TCP handlers and active TCP processors, set to True when a socket is ready for processing.
         self.local_address = socket_object.getsockname()[0]  # store local address of the socket in a easer to reach location
-        if socket_object.type == socket.SocketKind.SOCK_STREAM: self.peer_address = socket_object.getpeername()[0]
-        else: self.peer_address = peer_address
-
-        if audio_out_buffer_instance:
-            self.audio_output_buffer_instance = audio_out.add_queue()
-
+        self.peer_address = socket_object.getpeername()[0]  # if the socket is a tcp socket, we allready have the address when we set it up, can just fetch it.
 
     def fileno(self):  # Select and Selector both require this behaviour from objects to function properly, look at learning_select.py for reasoning.
         return self.socket.fileno()
@@ -56,6 +51,31 @@ class PackedSocket:  # A class that takes a socket object, and packages addressi
         message_length = int(self.encryption.decrypt(message_length))
         data = self.socket.recv(message_length)
         return self.encryption.decrypt(data)
+
+
+
+class UDPPackedSocket:
+    def __init__(self, socket_object, encryption_object, peer_address, port):
+        self.socket = socket_object  # pack the supplied socket
+        self.encryption = encryption_object  # for a udp socket this will allways be Asymetric, as the tcp handler passes it in.
+        self.peer_address = peer_address  # if the socket is a packed
+        self.audio_output_buffer_instance = audio_out.add_queue()
+        self.port = port
+
+    def fileno(self):  # Select and Selector both require this behaviour from objects to function properly, look at learning_select.py for reasoning.
+        return self.socket.fileno()
+
+    def send_data(self, data):  # Send supplied data down a packed socket with its current encryption scheme
+        data = self.encryption.encrypt(data)
+        header = self.encryption.encrypt(f"{len(data):<{mukkava_encryption.message_length_hsize}}")
+        self.socket.sendto(header + data, (self.peer_address, self.port))
+
+    def recieve_data(self):  # Recieve data from supplied packed socket with its current encryption scheme
+        message_length = self.socket.recv(self.encryption.encrypted_hsize)
+        message_length = int(self.encryption.decrypt(message_length))
+        data = self.socket.recv(message_length)
+        return self.encryption.decrypt(data)
+
 
 
 class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
@@ -92,7 +112,7 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
 
     def tcp_inbound_socket_handler(self):  # A handler for generating INBOUND  (server -> client) socket data streams
         while True:
-            inbound_socket = PackedSocket(self.server_socket.accept()[0], self.symetric)
+            inbound_socket = TCPPackedSocket(self.server_socket.accept()[0], self.symetric)
             print(f"<:INh:Connection to local server from {inbound_socket.peer_address}")
 
             if not (existing_socket := self.check_for_existing_socket("outbound_sockets", inbound_socket.peer_address)):
@@ -119,7 +139,7 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
         outbound_socket.settimeout(120)  # set the maximum ttl for a socket read, write or connect operation. #TODO change this lower once working
         outbound_socket.connect((address, self.port))  # connect to the supplied address
         print(f"<:OUTh:Connected to remote server at {address}:{self.port}")
-        outbound_socket = PackedSocket(outbound_socket, self.symetric)  # With a outbound socket, we cant generate our packed socket untill the connection has been established
+        outbound_socket = TCPPackedSocket(outbound_socket, self.symetric)  # With a outbound socket, we cant generate our packed socket untill the connection has been established
 
         if not (existing_socket := self.check_for_existing_socket("inbound_sockets", outbound_socket.peer_address)):  # Check if we have an existing inbound socket key for this given adddress, if we dont this is the first step of the handshake)and we need to setup asymetric encryption
             print(f"<:OUTh:No asymetric encryption object found for {outbound_socket.peer_address}, creating.")
@@ -189,7 +209,7 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
         return json.dumps(address_list)  # serialise the list in  quick and secure format for interpritation by the other client.
 
     def udp_socket_handler(self, peer_address, encryption_object):
-        new_socket = PackedSocket(socket.socket(socket.AF_INET, socket.SOCK_DGRAM), encryption_object, peer_address, audio_out_buffer_instance=True)
+        new_socket = UDPPackedSocket(socket.socket(socket.AF_INET, socket.SOCK_DGRAM), encryption_object, peer_address, self.port)
         self.udp_sockets_info["sockets"].append(new_socket)
 
     def udp_socket_processor(self):
