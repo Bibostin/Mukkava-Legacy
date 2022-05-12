@@ -30,7 +30,14 @@ def asymetric_pad(message):
           f"encrypted header data: {encrypted_header}  encrypted header data length: {len(encrypted_header)}\n")
 
 
-symetric_pad("test")
-symetric_pad("it doesn't matter how long the message is, as long as it length can be represented in 4 bytes I can make a encrypted header (that will allways be 44 charecter bytes long) for it that defines this messages length!")
-asymetric_pad("this is a asym test")
-asymetric_pad("this is a asym test thats slightly larger and attempts to proove asym header lengths normalise at 108 charecters of length")
+# symetric_pad("test")
+# symetric_pad("it doesn't matter how long the message is, as long as it length can be represented in 4 bytes I can make a encrypted header (that will allways be 44 charecter bytes long) for it that defines this messages length!")
+# asymetric_pad("this is a asym test")
+# asymetric_pad("this is a asym test thats slightly larger and attempts to proove asym header lengths normalise at 108 charecters of length")
+
+symetric_pad("TEXT")
+symetric_pad("VOIC")
+symetric_pad("HDSK")
+symetric_pad("TEXT")
+symetric_pad("VOIC")
+symetric_pad("HDSK")

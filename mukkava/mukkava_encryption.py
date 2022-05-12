@@ -63,7 +63,6 @@ from nacl.signing import SigningKey, VerifyKey
 
 #Message header constants - Used to add fixed length padding to the header fields so sockets know how much data to recieve Padding_test in first_party_tests shows this well.
 message_length_hsize = 4  # constant variable for the message length section of the header in charecter bytes.
-message_type_hsize = 4  # constant variable for the size of the message type section of the header
 
 class Symetric:  # Symetric encryption (Xsalsa20) and MAC authentication (Poly1305) to encode / decode data. created globally and used initally for all sockets
     def __init__(self, password):
