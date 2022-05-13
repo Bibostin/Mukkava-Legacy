@@ -19,6 +19,7 @@ DISSERTATION NOTES:
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 """
 import json
+import queue
 import select
 import ipaddress
 import socket
@@ -63,6 +64,7 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
         self.port = port  # port supplied in main.py for the server socket to listen on
         self.symetric = mukkava_encryption.Symetric(symetricphrase)  # A symetric object used for inital handshake
         self.username = username  # name supplied in main.py, appended to text messages as part of the message string
+        self.text_buffer = queue.SimpleQueue()
 
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # The TCP Stacks "bound" socket, accepts connections from peer outbound sockets and sends out its own outbound sockets to the other clients server_socket if required
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Force the OS of the system to allow the reuse of the port via socket binding without a delay
@@ -71,19 +73,19 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
         print(f"<:MAIN:TCP server started on {socket.gethostbyname(socket.gethostname())}:{self.port} waiting for new connections")
 
         inbound_socket_handler_thread = threading.Thread(target=self.inbound_socket_handler)  # you call the function name NOT AN INSTANCE OF THE FUNCTION such as func()
-        inbound_voice_processor_thread = threading.Thread(target=self.inbound_socket_voice_processor)
+        inbound_processor_thread = threading.Thread(target=self.inbound_socket_processor)
         outbound_processor_thread = threading.Thread(target=self.outbound_socket_proccesor)
         inbound_socket_handler_thread.daemon = True
-        inbound_voice_processor_thread.daemon = True
+        inbound_processor_thread.daemon = True
         outbound_processor_thread.daemon = True
         inbound_socket_handler_thread.start()
         print(f"<:MAIN:TCP Inbound handler thread started")
-        inbound_voice_processor_thread.start()
+        inbound_processor_thread.start()
         print(f"<:MAIN:TCP Inbound voice processor thread started")
         outbound_processor_thread.start()
         print(f"<:MAIN:TCP Outbound processor thread started")
         if initial_address: self.tcp_outbound_socket_handler(initial_address, propagate_peers=True)  # if an initial address was supplied, spin up an outbound socket connecting to that address
-        while True: self.inbound_socket_text_processor(input())
+        while True: self.text_buffer.put(input())
 
     def inbound_socket_handler(self):  # A handler for generating INBOUND  (server -> client) socket data streams
         while True:
@@ -150,24 +152,24 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
         else: print(f"<:OUTh:Recieved current peer address list from {outbound_socket.peer_address}, but not propagating.")
         outbound_socket.operation_flag = True # The socket is ready for operation.
 
-    def inbound_socket_text_processor(self, data):  # A function for taking input text data and sending it to all peers in the session.
-        if self.sockets_info["inbound_sockets"]:  # if inbound sockets are present,
-            if data:  # if the supplied data actually has content
-                data = self.username+": " + data  # append username to the data
-                for inbound_socket in self.sockets_info["inbound_sockets"]:  # send the message to all peers
-                    if inbound_socket.operation_flag:
-                        inbound_socket.send_data(data, "TEXT")
-        else: print("<:INp:Not currently connected to any peers.")  # alert the user they are not currently connected to anyone
-
-    def inbound_socket_voice_processor(self):
+    def inbound_socket_processor(self):  # A function for taking input text data and sending it to all peers in the session.
         while True:
-            if self.sockets_info["inbound_sockets"]:
+            if self.sockets_info["inbound_sockets"]:  # if inbound sockets are present,
+                if not audio_in.data_buffer.empty():
+                    voice_data = audio_in.data_buffer.get()
+                    print(voice_data)
+                else: voice_data = False
+
+                if not self.text_buffer.empty():
+                    text_data =  self.username+": " + self.text_buffer.get()  # append username to the text data
+                    print(text_data)
+                else: text_data = False
+
                 _, writable_sockets, _ = select.select([], self.sockets_info["inbound_sockets"], [])
-                data = audio_in.data_buffer.get()
                 for inbound_socket in writable_sockets:
-                    if inbound_socket.operation_flag:
-                        inbound_socket.send_data(data, "VOIC")
-            else: print("<:INp:Not currently connected to any peers.")  # alert the user they are not currently connected to anyone
+                    if inbound_socket.operation_flag:  # if the handler has finished setting up the socket (and its not still in handshake)
+                        if voice_data: inbound_socket.send_data(voice_data, "VOIP")  # if we have voice data, send it
+                        if text_data: inbound_socket.send_data(text_data, "TEXT")  # if we have text data, send it
 
 
     def outbound_socket_proccesor(self):  # consider switching out select, epoll, kqueues, SELECTOR?
@@ -178,7 +180,9 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                     if outbound_socket.operation_flag:
                         data, message_type = outbound_socket.recieve_data()
                         if message_type == "TEXT": print(f"<:OUTp:{outbound_socket.peer_address}:{data}")
-                        elif message_type == "VOIC": outbound_socket.audio_out_buffer_instance.put(data)
+                        elif message_type == "VOIP":
+                            print("recieved voice data")
+                            outbound_socket.audio_out_buffer_instance.put(data)
                         else: print(f"<:OUT recieved a message from {outbound_socket.peer_address} with bad message type tagging")
                 audio_out.process_input()
 
