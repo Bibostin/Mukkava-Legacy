@@ -54,8 +54,9 @@ class PackedSocket:  # A class that takes a socket object, and packages informat
         message_length = self.socket.recv(self.encryption.encrypted_hsize)
         message_length = int(self.encryption.decrypt(message_length))
         message_type = self.socket.recv(self.encryption.encrypted_hsize)
+        message_type = self.encryption.decrypt(message_type)
         data = self.socket.recv(message_length)
-        return self.encryption.decrypt(data), self.encryption.decrypt(message_type)
+        return self.encryption.decrypt(data), message_type
 
 
 class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
@@ -175,7 +176,9 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                     if outbound_socket.operation_flag:
                         data, message_type = outbound_socket.recieve_data()
                         if message_type == "TEXT": print(f"<:OUTp:{outbound_socket.peer_address}:{data}")
-                        elif message_type == "VOIP": outbound_socket.audio_out_buffer_instance.put(data)
+                        elif message_type == "VOIP":
+                            outbound_socket.audio_out_buffer_instance.put(data)
+                            print("recieved voice data")
                         else: print(f"<:OUT recieved a message from {outbound_socket.peer_address} with bad message type tagging")
                 audio_out.process_input()
 
