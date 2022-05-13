@@ -91,6 +91,7 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
         while True:
             inbound_socket = PackedSocket(self.server_socket.accept()[0], self.symetric)
             print(f"<:INh:Connection to local server from {inbound_socket.peer_address}")
+            audio_in.instream.start()
 
             if not (existing_socket := self.check_for_existing_socket("outbound_sockets", inbound_socket.peer_address)):
                 print(f"<:INh:No asymetric encryption object found for {inbound_socket.peer_address}, creating.")
@@ -115,6 +116,7 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
         outbound_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # create a TCP socket
         outbound_socket.settimeout(120)  # set the maximum ttl for a socket read, write or connect operation. #TODO change this lower once working
         outbound_socket.connect((address, self.port))  # connect to the supplied address
+        audio_out.outstream.start()
         print(f"<:OUTh:Connected to remote server at {address}:{self.port}")
         outbound_socket = PackedSocket(outbound_socket, self.symetric)  # With a outbound socket, we cant generate our packed socket untill the connection has been established
 
@@ -146,14 +148,13 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                         self.tcp_outbound_socket_handler(peer_address)  # initiate a non peer propagating outbound handler for each supplied address, connecting us to all the peers in the voip session.
                     except ValueError: print(f"<:OUT: Bad address \"{peer_address}\" in address list, malicious peer?")
 
-                audio_in.instream.start()
-                audio_out.outstream.start()
-
         else: print(f"<:OUTh:Recieved current peer address list from {outbound_socket.peer_address}, but not propagating.")
         outbound_socket.operation_flag = True # The socket is ready for operation.
 
     def inbound_socket_processor(self):  # A function for taking input text data and sending it to all peers in the session.
         while True:
+            print(audio_in.instream.active)
+            print(audio_out.outstream.active)
             if self.sockets_info["inbound_sockets"]:  # if inbound sockets are present,
                 if not audio_in.data_buffer.empty():
                     voice_data = audio_in.data_buffer.get()
@@ -204,31 +205,3 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
             address_list.remove(receiving_peer_address)  # Ensure the address of the peer is not in the sent list (this is checked client side too)
         else: address_list.append("no-other-peers")  # The peer is currently our only connection
         return json.dumps(address_list)  # serialise the list in  quick and secure format for interpritation by the other client.
-
-
-
-    #
-    # def udp_socket_processor(self):
-    #     while True:
-    #         if self.udp_sockets_info["sockets"]:
-    #             if not audio_in.instream.active or not audio_out.outstream.active:
-    #                 audio_in.instream.start()
-    #                 audio_out.outstream.start()
-    #
-    #             readable_sockets, writable_sockets, _ = select.select(self.udp_sockets_info["inbound_sockets"], self.udp_sockets_info["inbound_sockets"], [], 5)
-    #
-    #             data = audio_in.data_buffer.get()
-    #             for inbound_socket in readable_sockets:
-    #                 inbound_socket.send_data(data)
-    #
-    #             for socket in writable_sockets:
-    #                 socket.audio_out_buffer_instance.put(socket.recieve_data())
-    #             audio_out.process_input()
-    #
-    #         else:
-    #             audio_in.instream.stop()
-    #             audio_out.outstream.stop()
-    #
-    #
-    #
-    #
