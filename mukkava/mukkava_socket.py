@@ -153,17 +153,11 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
 
     def inbound_socket_processor(self):  # A function for taking input text data and sending it to all peers in the session.
         while True:
-            print(audio_in.instream.active)
-            print(audio_out.outstream.active)
             if self.sockets_info["inbound_sockets"]:  # if inbound sockets are present,
-                if not audio_in.data_buffer.empty():
-                    voice_data = audio_in.data_buffer.get()
-                    print(voice_data)
+                if not audio_in.data_buffer.empty(): voice_data = audio_in.data_buffer.get()
                 else: voice_data = False
 
-                if not self.text_buffer.empty():
-                    text_data =  self.username+": " + self.text_buffer.get()  # append username to the text data
-                    print(text_data)
+                if not self.text_buffer.empty(): text_data =  self.username+": " + self.text_buffer.get()  # append username to the text data
                 else: text_data = False
 
                 _, writable_sockets, _ = select.select([], self.sockets_info["inbound_sockets"], [])
@@ -181,9 +175,7 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                     if outbound_socket.operation_flag:
                         data, message_type = outbound_socket.recieve_data()
                         if message_type == "TEXT": print(f"<:OUTp:{outbound_socket.peer_address}:{data}")
-                        elif message_type == "VOIP":
-                            print("recieved voice data")
-                            outbound_socket.audio_out_buffer_instance.put(data)
+                        elif message_type == "VOIP": outbound_socket.audio_out_buffer_instance.put(data)
                         else: print(f"<:OUT recieved a message from {outbound_socket.peer_address} with bad message type tagging")
                 audio_out.process_input()
 
