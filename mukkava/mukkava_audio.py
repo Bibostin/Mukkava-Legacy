@@ -59,7 +59,6 @@ https://github.com/TeamPyOgg/PyOgg - not feature complete, doesn't have an encod
 https://github.com/Zuzu-Typ/PyOpenAL - Tested, but decided not to use as it doesn't have support for openAL's recording functions, Streaming audio seems funky too.
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 """
-import sounddevice
 import sounddevice as sd  # Sound device, portaudio wrapper for recording and playback of audio
 import numpy; assert numpy  # numpy is utilised by sounddevice, but sounddevice doesn't show this to the interpreter so we have to assert it to stop pep warnings
 import pyflac  # Python implementation of the flac standard, used for encoding and decoding
@@ -68,7 +67,7 @@ import queue  # used for buffering input and output sound data for transmission 
 sd.default.channels = 2  # Default number of channels sd will attempt to use for input and output devices (I use 2 for Stereo audio.)
 sd.default.dtype = 'int16'  # bit depth for a singular sample frame. pyFLAC currently only supports 16-bit audio, sd supports greater values.
 sd.default.samplerate = 48000  # Sampling rate (how many samples frames to take per second) for audio data. higher value = greater audio depth, but larger performance overhead.
-sd.default.blocksize = 1248  # lower value = less latency, but more performance overhead
+sd.default.blocksize = 3000  # lower value = less latency, but more performance overhead
 
 
 def audiosetup():  # Responsible for inital audio device listing, setup and testing    if operation == "list":

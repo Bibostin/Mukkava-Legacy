@@ -36,8 +36,8 @@ audio_out = mukkava_audio.AudioOutput()  # Set up our audio output (peer -> spea
 class PackedSocket:  # A class that takes a socket object, and packages information relating to its operation as part of NetStack.
     def __init__(self, socket_object, encryption_object):
         self.socket = socket_object  # pack the supplied socket
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 30720)
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 30720)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 3072000)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 3072000)
         self.encryption = encryption_object  # for a tcp socket this will be a symetric object initally, then a asymetric after handshake.
         self.local_address = socket_object.getsockname()[0]  # store local address of the socket in a easer to reach location
         self.peer_address = socket_object.getpeername()[0]  # if the socket is a tcp socket, we allready have the address when we set it up, can just fetch it.
