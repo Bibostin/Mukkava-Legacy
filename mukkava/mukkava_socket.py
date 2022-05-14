@@ -24,11 +24,10 @@ import select
 import ipaddress
 import socket
 import threading
-
 import nacl.exceptions
-
 import mukkava_encryption
 import mukkava_audio
+
 
 audio_in = mukkava_audio.AudioInput()  # Set up our audio input (microphone-> peer) encoder and stream handler
 audio_out = mukkava_audio.AudioOutput()  # Set up our audio output (peer -> speaker) decoder and stream handler
@@ -37,6 +36,8 @@ audio_out = mukkava_audio.AudioOutput()  # Set up our audio output (peer -> spea
 class PackedSocket:  # A class that takes a socket object, and packages information relating to its operation as part of NetStack.
     def __init__(self, socket_object, encryption_object):
         self.socket = socket_object  # pack the supplied socket
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 30720)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 30720)
         self.encryption = encryption_object  # for a tcp socket this will be a symetric object initally, then a asymetric after handshake.
         self.local_address = socket_object.getsockname()[0]  # store local address of the socket in a easer to reach location
         self.peer_address = socket_object.getpeername()[0]  # if the socket is a tcp socket, we allready have the address when we set it up, can just fetch it.
@@ -175,7 +176,7 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
     def outbound_socket_proccesor(self):  # consider switching out select, epoll, kqueues, SELECTOR?
         while True:
             if self.sockets_info["outbound_sockets"]: # if there are
-                readable_sockets, _, errored_sockets = select.select(self.sockets_info["outbound_sockets"], [], self.sockets_info["outbound_sockets"], 5)
+                readable_sockets, _, _ = select.select(self.sockets_info["outbound_sockets"], [], [], 5)
                 for outbound_socket in readable_sockets:
                     if outbound_socket.operation_flag:
                         try: data, message_type = outbound_socket.recieve_data()
@@ -189,9 +190,6 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                         else: print(f"<:OUT recieved a message from {outbound_socket.peer_address} with bad message type tagging")
                 audio_out.process_input()
 
-                for outbound_socket in errored_sockets:
-                    outbound_socket.socket.close()
-                    print(f"<:OUTp: outbound socket to {outbound_socket.peer_address} encountered an error, closing connection.")
 
     def check_for_existing_socket(self, inbound_or_outbound, peer_address):  # A Simple function for evaluating whether any existing sockets are connected to or originate from the specified address
         for packed_socket in self.sockets_info[inbound_or_outbound]:  # for all the packed sockets in whichever socket type dictionary was specified
