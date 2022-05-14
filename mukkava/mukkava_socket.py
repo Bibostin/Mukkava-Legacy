@@ -179,7 +179,9 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                 for outbound_socket in readable_sockets:
                     if outbound_socket.operation_flag:
                         try: data, message_type = outbound_socket.recieve_data()
-                        except nacl.exceptions.CryptoError: continue
+                        except nacl.exceptions.CryptoError:
+                            print(f"<:OUT recieved a message from {outbound_socket.peer_address} with bad encryption")
+                            continue
                         if message_type == "TEXT": print(f"<:OUTp:{outbound_socket.peer_address}:{data}")
                         elif message_type == "VOIP": outbound_socket.audio_out_buffer_instance.put(data)
                         else: print(f"<:OUT recieved a message from {outbound_socket.peer_address} with bad message type tagging")
