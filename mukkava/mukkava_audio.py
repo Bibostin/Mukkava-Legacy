@@ -67,7 +67,7 @@ import queue  # used for buffering input and output sound data for transmission 
 sd.default.channels = 2  # Default number of channels sd will attempt to use for input and output devices (I use 2 for Stereo audio.)
 sd.default.dtype = 'int16'  # bit depth for a singular sample frame. pyFLAC currently only supports 16-bit audio, sd supports greater values.
 sd.default.samplerate = 48000  # Sampling rate (how many samples frames to take per second) for audio data. higher value = greater audio depth, but larger performance overhead.
-sd.default.blocksize = 3000  # lower value = less latency, but more performance overhead
+sd.default.blocksize = 1024  # lower value = less latency, but more performance overhead
 
 
 def audiosetup():  # Responsible for inital audio device listing, setup and testing    if operation == "list":
