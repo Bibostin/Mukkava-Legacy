@@ -97,7 +97,6 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
         while True:
             inbound_socket = PackedSocket(self.server_socket.accept()[0], self.symetric)
             print(f"<:INh:Connection to local server from {inbound_socket.peer_address}")
-            audio_in.instream.start()
 
             if not (existing_socket := self.check_for_existing_socket("outbound_sockets", inbound_socket.peer_address)):
                 print(f"<:INh:No asymetric encryption object found for {inbound_socket.peer_address}, creating.")
@@ -122,7 +121,6 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
         outbound_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # create a TCP socket
         outbound_socket.settimeout(120)  # set the maximum ttl for a socket read, write or connect operation. #TODO change this lower once working
         outbound_socket.connect((address, self.port))  # connect to the supplied address
-        audio_out.outstream.start()
         print(f"<:OUTh:Connected to remote server at {address}:{self.port}")
         outbound_socket = PackedSocket(outbound_socket, self.symetric)  # With a outbound socket, we cant generate our packed socket untill the connection has been established
 
@@ -160,6 +158,7 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
     def inbound_socket_processor(self):  # A function for taking input text data and sending it to all peers in the session.
         while True:
             if self.sockets_info["inbound_sockets"]:  # if inbound sockets are present,
+                if not audio_in.instream.active: audio_in.instream.start()
                 if not audio_in.data_buffer.empty(): voice_data = audio_in.data_buffer.get()
                 else: voice_data = False
 
@@ -171,20 +170,22 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                     if inbound_socket.operation_flag:  # if the handler has finished setting up the socket (and its not still in handshake)
                         if voice_data: inbound_socket.send_data(voice_data, "VOIP")  # if we have voice data, send it
                         if text_data: inbound_socket.send_data(text_data, "TEXT")  # if we have text data, send it
+            else: audio_in.instream.stop()
 
 
     def outbound_socket_proccesor(self):  # consider switching out select, epoll, kqueues, SELECTOR?
         while True:
             if self.sockets_info["outbound_sockets"]: # if there are
+                if not audio_out.outstream.active: audio_out.outstream.start()
                 readable_sockets, _, _ = select.select(self.sockets_info["outbound_sockets"], [], [], 5)
                 for outbound_socket in readable_sockets:
                     if outbound_socket.operation_flag:
                         try: data, message_type = outbound_socket.recieve_data()
                         except nacl.exceptions.CryptoError: continue
                         if message_type == "TEXT": print(f"<:OUTp:{outbound_socket.peer_address}:{data}")
-                        elif message_type == "VOIP":
-                            outbound_socket.audio_out_buffer_instance.put(data)
+                        elif message_type == "VOIP": outbound_socket.audio_out_buffer_instance.put(data)
                 audio_out.process_input()
+            else:audio_out.outstream.stop()
 
 
     def check_for_existing_socket(self, inbound_or_outbound, peer_address):  # A Simple function for evaluating whether any existing sockets are connected to or originate from the specified address
