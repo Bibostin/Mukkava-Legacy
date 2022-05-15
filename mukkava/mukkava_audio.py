@@ -19,7 +19,8 @@ MODULE NOTES:
     buffers, mixed then sent to the playback device (a little more complex, and with the potential for latency issues, but significantly less resource intensive.)
 
     blocksize had to be increased substantially from 128 to 1248 when introducing mixing because the mixing process with low blocksize (and thus high num of operations) introduced
-    processing latency that detracted from audio quality.
+    processing latency that detracted from audio quality. it had to be increased again to 2000, after implementing mukkava socket as the current networking implementation has a big
+    impact on performance, especially with multiple clients.
 
     The current mixer implementation doesnt care for what specific buffer processed data came from, merely that it is a distinct element that can be mixed. if you wanted to perform
     processing on specific data (eq, compression or volume leveling per user) pyflac would need to be modified so the callback could track this and put the data in a specific processing
@@ -67,8 +68,9 @@ import queue  # used for buffering input and output sound data for transmission 
 sd.default.channels = 2  # Default number of channels sd will attempt to use for input and output devices (I use 2 for Stereo audio.)
 sd.default.dtype = 'int16'  # bit depth for a singular sample frame. pyFLAC currently only supports 16-bit audio, sd supports greater values.
 sd.default.samplerate = 48000  # Sampling rate (how many samples frames to take per second) for audio data. higher value = greater audio depth, but larger performance overhead.
-sd.default.blocksize = 1500  # lower value = less latency, but more performance overhead
-
+sd.default.blocksize = 2000  # lower value = less latency, but more performance overhead
+sd.default.dither_off = True  # Disable dithering for low frequency audio
+sd.default.clip_off = True  # disable clipping for overdrived signals
 
 def audiosetup():  # Responsible for inital audio device listing, setup and testing    if operation == "list":
     print(f"available devices to use are bellow: \n{sd.query_devices()} \nDefault devices (input, output) are currently set to: {sd.default.device}")

@@ -19,16 +19,17 @@ pysimpleGUI - pysimpleGUI was tested and seemed promisng but was dropped due to 
 '''
 
 import ipaddress
-import sounddevice
+import sounddevice as sd
 from mukkava_audio import audiosetup
 import mukkava_socket
 
 print(".___  ___.  __    __   __  ___  __  ___      ___   ____    ____  ___ \n"
       "|   \/   | |  |  |  | |  |/  / |  |/  /     /   \  \   \  /   / /   \ P2P voip client\n"
-      "|  \  /  | |  |  |  | |  '  /  |  '  /     /  ^  \  \   \/   / /  ^  \ ver 0.2 - 03/05/2022\n"
+      "|  \  /  | |  |  |  | |  '  /  |  '  /     /  ^  \  \   \/   / /  ^  \ ver 1.0 - 16/05/2022\n"
       "|  |\/|  | |  |  |  | |    <   |    <     /  /_\  \  \      / /  /_\  \ Made by Z.Goggin\n"
       "|  |  |  | |  `--'  | |  .  \  |  .  \   /  _____  \  \    / /  _____  \ UP893303\n"
       "|__|  |__|  \______/  |__|\__\ |__|\__\ /__/     \__\  \__/ /__/     \__\ ")
+print(f"Audio settings: Blocksize - {sd.default.blocksize} Samplerate - {sd.default.samplerate} Channels - {sd.default.channels}")
 
 while True:
     choice = input("would you like to set and test your audio devices? (system defaults will be used otherwise) y/n: ")
@@ -36,7 +37,7 @@ while True:
         try:
             audiosetup()
             break
-        except sounddevice.PortAudioError():
+        except sd.PortAudioError():
             print("failed to query the set device, make sure you specify a valid device ID!")
             quit()
     elif choice == "n" or choice == "N": break
