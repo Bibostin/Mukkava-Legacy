@@ -147,9 +147,7 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                     except ValueError: pass  # The server did its job correctly and the address wasn't present.
                 print(f"<:OUTh:New peer/s recieved: {peer_address_list}")
                 for peer_address in peer_address_list:
-                    try:
-                        ipaddress.ip_address(peer_address)
-                        self.tcp_outbound_socket_handler(peer_address)  # initiate a non peer propagating outbound handler for each supplied address, connecting us to all the peers in the voip session.
+                    try: ipaddress.ip_address(peer_address); self.tcp_outbound_socket_handler(peer_address)  # initiate a non peer propagating outbound handler for each supplied address, connecting us to all the peers in the voip session.
                     except ValueError: print(f"<:OUT: Bad address \"{peer_address}\" in address list, malicious peer?")
 
         else: print(f"<:OUTh:Recieved current peer address list from {outbound_socket.peer_address}, but not propagating.")
@@ -181,11 +179,10 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                 for outbound_socket in readable_sockets:
                     if outbound_socket.operation_flag:
                         try: data, message_type = outbound_socket.recieve_data()
-                        except nacl.exceptions.CryptoError: print("decryption failure"); continue
+                        except nacl.exceptions.CryptoError: continue
                         if message_type == "TEXT": print(f"<:OUTp:{outbound_socket.peer_address}:{data}")
                         elif message_type == "VOIP":
                             outbound_socket.audio_out_buffer_instance.put(data)
-                            print("decryption success")
 
                 audio_out.process_input()
             else:audio_out.outstream.stop()
