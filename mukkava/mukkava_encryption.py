@@ -92,7 +92,7 @@ class Asymetric:  # Asymetric encryption (Curve25519) and  digital signatures (E
         self.private_decryption_key = PrivateKey.generate()  # generate Private key pair
         self.public_encryption_key = self.private_decryption_key.public_key  # Fetch the public key
         self.public_encryption_key_bytes = self.public_encryption_key.encode()  #serialised the public key for network transmission during handshake
-        self.neighbor_public_key = None  # This will be recieved durin the handshake
+        self.neighbor_public_key = None  # This will be recieved during the handshake
         self.asymetric_box = None  #this will be created after the handshake
 
         self.private_signing_key = SigningKey.generate()  # Generate a new pair of keys for digital signing
