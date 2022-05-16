@@ -33,21 +33,19 @@ udp sockets considered but dropped due to performance overhead of performing a l
 address of EVERY incoming packet to decrypt it properly, whereas with TCP, allthough the packet sizes themselves are larger, this encryption lookup is inherent to the individual sockets.)
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 """
-import json
+import json  # used for serialising peer address lists
 import os
 import queue
 import select
-import ipaddress
+import ipaddress # used to check the validity of peer ips
 import socket
 import threading
 import nacl.exceptions
 import mukkava_encryption
 import mukkava_audio
 
-
 audio_in = mukkava_audio.AudioInput()  # Set up our audio input (microphone-> peer) encoder and stream handler
 audio_out = mukkava_audio.AudioOutput()  # Set up our audio output (peer -> speaker) decoder and stream handler
-
 
 class PackedSocket:  # A class that takes a socket object, and packages information relating to its operation as part of NetStack.
     def __init__(self, socket_object, encryption_object):

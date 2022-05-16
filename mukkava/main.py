@@ -17,10 +17,8 @@ Ncurses - Ncurses was considered but dropped due to me not seeing any percievabl
 pysimpleGUI - pysimpleGUI was tested and seemed promisng but was dropped due to time constraints.
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 '''
-
 import ipaddress
 import socket
-
 import sounddevice as sd
 from mukkava_audio import audiosetup
 import mukkava_socket
