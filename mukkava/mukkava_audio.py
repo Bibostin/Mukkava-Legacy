@@ -71,19 +71,39 @@ sd.default.samplerate = 48000  # Sampling rate (how many samples frames to take 
 sd.default.blocksize = 1600  # lower value = less latency, but more performance overhead
 
 def audiosetup():  # Responsible for inital audio device listing, setup and testing    if operation == "list":
-    print(f"available devices to use are bellow: \n{sd.query_devices()} \nDefault devices (input, output) are currently set to: {sd.default.device}")
+    device_list = sd.query_devices()
+    print(f"available devices to use are bellow: \n{device_list} \nDefault devices (input, output) are currently set to: {sd.default.device}")
     while True:
-        try: sd.default.device = int(input("Desired input device ID: ")), int(input("Desired output device ID: ")); break
-        except ValueError: print("supplied device id is a charecter, supply a numeric value")
-    print(f"Default devices were set to: {sd.default.device}")
-    input("Hit enter to test recording via input device ")
-    test = sd.rec(3 * sd.default.samplerate)
-    print("RECORDING")
-    sd.wait()
-    input("Hit enter to test playback via output device ")
-    sd.play(test)
-    print("PLAYING")
-    sd.wait()
+        try:
+            input_device = int(input("Desired input device ID: "))
+            output_device = int(input("Desired output device ID: "))
+        except ValueError:
+            print("supplied device id is a charecter, supply a numeric value")
+            continue
+        if input_device not in range(len(device_list)) or  output_device not in range(len(device_list)):
+            print("Supplied device ID's are out of range for availible devices")
+        else:
+                sd.default.device = input_device, output_device
+                print(f"Default devices were set to: {sd.default.device}")
+                input("Hit enter to test recording via input device ")
+                try:
+                    test = sd.rec(3 * sd.default.samplerate)
+                    print("RECORDING")
+                    sd.wait()
+                except sd.PortAudioError:
+                    print("This input device is missing input channels, ensure an appropriate device is selected.")
+                    quit()
+                input("Hit enter to test playback via output device ")
+                try:
+                    sd.play(test)
+                    print("PLAYING")
+                    sd.wait()
+                except sd.PortAudioError:
+                    print("This output device is missing output channels, ensure an appropriate device is selected.")
+                    quit()
+                break
+
+
 
 
 class AudioInput:  # Sets up a sound device input stream & flacc encoder. instream generates input audio data, passes it to flac which encodes it, then puts it in a queue for serialisation.

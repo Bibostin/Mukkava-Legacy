@@ -19,6 +19,8 @@ pysimpleGUI - pysimpleGUI was tested and seemed promisng but was dropped due to 
 '''
 
 import ipaddress
+import socket
+
 import sounddevice as sd
 from mukkava_audio import audiosetup
 import mukkava_socket
@@ -34,12 +36,8 @@ print(f"Blocksize:{sd.default.blocksize}BpC Samplerate:{sd.default.samplerate}Hz
 while True:
     choice = input("would you like to set and test your audio devices? (system defaults will be used otherwise) y/n: ")
     if choice == "y" or choice == "Y":
-        try:
-            audiosetup()
-            break
-        except sd.PortAudioError():
-            print("failed to query the set device, make sure you specify a valid device ID!")
-            quit()
+        audiosetup()
+        break
     elif choice == "n" or choice == "N": break
     else: print("Invalid choice input")
 
@@ -66,7 +64,7 @@ while True:
         port = 9987
         print(f"no port supplied, defaulting to testing port, {port}")
         break
-    try: listen_port = int(port)
+    try: port = int(port)
     except ValueError: print("You have entered a floating point or charecter value, use an integer"); continue
     if port in range(1024, 65535): break
     elif port in range(1,1023): print(f"{port} is a typically reserved port number, supply a number between 1024 - 65535")
@@ -78,7 +76,10 @@ while True:
     if choice == "y" or choice == "Y":
         while True:
             inital_peer_address = input("Please enter the IPv4 address for your inital peer for the VOIP session (dot-decimal notation): ")
-            try: ipaddress.ip_address(inital_peer_address); break
+            try:
+                ipaddress.ip_address(inital_peer_address)
+                if not inital_peer_address == socket.gethostbyname(socket.gethostname()): break
+                else: print("Cannot specify your own LAN addres as a inital peer")
             except ValueError: print(f"\"{inital_peer_address}\" is not a valid IPv4 address")
         Netstack = mukkava_socket.NetStack(port, symetricphrase, username, inital_peer_address)
         break

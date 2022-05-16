@@ -19,6 +19,7 @@ DISSERTATION NOTES:
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 """
 import json
+import os
 import queue
 import select
 import ipaddress
@@ -87,10 +88,10 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
         inbound_socket_handler_thread.start()
         print(f"<:MAIN:TCP Inbound handler thread started")
         inbound_processor_thread.start()
-        print(f"<:MAIN:TCP Inbound voice processor thread started")
+        print(f"<:MAIN:TCP Inbound processor thread started")
         outbound_processor_thread.start()
         print(f"<:MAIN:TCP Outbound processor thread started")
-        if initial_address: self.tcp_outbound_socket_handler(initial_address, propagate_peers=True)  # if an initial address was supplied, spin up an outbound socket connecting to that address
+        if initial_address: self.outbound_socket_handler(initial_address, propagate_peers=True)  # if an initial address was supplied, spin up an outbound socket connecting to that address
         while True: self.text_buffer.put(input()) # Simply loop continuously putting user input into the text buffer
 
     def inbound_socket_handler(self):  # A handler for generating INBOUND  (server -> client) socket data streams
@@ -99,14 +100,23 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
             print(f"<:INh:Connection to local server from {inbound_socket.peer_address}")
 
             if not (existing_socket := self.check_for_existing_socket("outbound_sockets", inbound_socket.peer_address)):
-                print(f"<:INh:No asymetric encryption object found for {inbound_socket.peer_address}, creating.")
-                asymetric_instance = mukkava_encryption.Asymetric()  # setup a new asymetric instance for this specific  quad pair of sockets
-                inbound_socket.send_data(asymetric_instance.public_encryption_key_bytes, "HDSK")
-                inbound_socket.send_data(asymetric_instance.public_verify_key_bytes, "HDSK")
-                asymetric_instance.setup(inbound_socket.recieve_data()[0], inbound_socket.recieve_data()[0])
-                inbound_socket.encryption = asymetric_instance
-                self.sockets_info['inbound_sockets'].append(inbound_socket)  # unlike the outbound_handler, we cant handle for appending the packedsocket object to sock_info as a statement after the if else check for an existing socket as the inbound check calls a instance of outbound handler that NEEDS to know about this socket
-                self.tcp_outbound_socket_handler(inbound_socket.peer_address)  # if address isn't in self.sockets_info["outbound_sockets] we do not have a client going to the opposing server and must create one.
+                try:
+                    print(f"<:INh:No asymetric encryption object found for {inbound_socket.peer_address}, creating.")
+                    asymetric_instance = mukkava_encryption.Asymetric()  # setup a new asymetric instance for this specific  quad pair of sockets
+                    inbound_socket.send_data(asymetric_instance.public_encryption_key_bytes, "HDSK")
+                    inbound_socket.send_data(asymetric_instance.public_verify_key_bytes, "HDSK")
+                    asymetric_instance.setup(inbound_socket.recieve_data()[0], inbound_socket.recieve_data()[0])
+                    inbound_socket.encryption = asymetric_instance
+                    self.sockets_info['inbound_sockets'].append(inbound_socket)  # unlike the outbound_handler, we cant handle for appending the packedsocket object to sock_info as a statement after the if else check for an existing socket as the inbound check calls a instance of outbound handler that NEEDS to know about this socket
+                    self.outbound_socket_handler(inbound_socket.peer_address)  # if address isn't in self.sockets_info["outbound_sockets] we do not have a client going to the opposing server and must create one.
+                except ConnectionResetError:
+                    print(f"<:INh: connection from {inbound_socket.peer_address} dropped midhandshake")
+                    inbound_socket.socket.close()
+                    continue
+                except nacl.exceptions.CryptoError:
+                    print(f"<:INh: connection from {inbound_socket.peer_address} failed handshake (symetric key mismatch)")
+                    inbound_socket.socket.close()
+                    continue
             else:
                 inbound_socket.encryption = existing_socket.encryption
                 print(f"<:INh:Found asymetric encryption object for {inbound_socket.peer_address}")
@@ -117,20 +127,31 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
             print(f"<:INh:Sent current peer address list to {inbound_socket.peer_address}")
             inbound_socket.operation_flag = True
 
-    def tcp_outbound_socket_handler(self, address, propagate_peers=False):  # A handler for generating OUTBOUND  (client -> server) socket data streams
+    def outbound_socket_handler(self, address, propagate_peers=False):  # A handler for generating OUTBOUND  (client -> server) socket data streams
         outbound_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # create a TCP socket
-        outbound_socket.settimeout(120)  # set the maximum ttl for a socket read, write or connect operation. #TODO change this lower once working
-        outbound_socket.connect((address, self.port))  # connect to the supplied address
-        print(f"<:OUTh:Connected to remote server at {address}:{self.port}")
+        outbound_socket.settimeout(120)  # set the maximum ttl for a socket read, write or connect operation.
+        try: outbound_socket.connect((address, self.port))  # connect to the supplied address
+        except TimeoutError: print(f"<:OUTh: Could not connect to {address} at this time, endpoint may be inactive (if this is your inital peer, check for a typo)"); return
+        except os.error([101]): print(f"<:OUTh: Address {address} is unreachable from this network (check mukkava is binding to your actual LAN address)"); return
+        print(f"<:OUTh: Connected to remote server at {address}:{self.port}")
         outbound_socket = PackedSocket(outbound_socket, self.symetric)  # With a outbound socket, we cant generate our packed socket untill the connection has been established
 
         if not (existing_socket := self.check_for_existing_socket("inbound_sockets", outbound_socket.peer_address)):  # Check if we have an existing inbound socket key for this given adddress, if we dont this is the first step of the handshake)and we need to setup asymetric encryption
-            print(f"<:OUTh:No asymetric encryption object found for {outbound_socket.peer_address}, creating.")
-            asymetric_instance = mukkava_encryption.Asymetric()  # setup a new asymetric instance
-            asymetric_instance.setup(outbound_socket.recieve_data()[0], outbound_socket.recieve_data()[0])  # Outbound clients allways recieve npkb and npvb first, then send after
-            outbound_socket.send_data(asymetric_instance.public_encryption_key_bytes, "HDSK")
-            outbound_socket.send_data(asymetric_instance.public_verify_key_bytes, "HDSK")
-            outbound_socket.encryption = asymetric_instance
+            try:
+                print(f"<:OUTh: No asymetric encryption object found for {outbound_socket.peer_address}, creating.")
+                asymetric_instance = mukkava_encryption.Asymetric()  # setup a new asymetric instance
+                asymetric_instance.setup(outbound_socket.recieve_data()[0], outbound_socket.recieve_data()[0])  # Outbound clients allways recieve npkb and npvb first, then send after
+                outbound_socket.send_data(asymetric_instance.public_encryption_key_bytes, "HDSK")
+                outbound_socket.send_data(asymetric_instance.public_verify_key_bytes, "HDSK")
+                outbound_socket.encryption = asymetric_instance
+            except ConnectionResetError:
+                print(f"<:OUTh: Remote server at {outbound_socket.peer_address} dropped connection midhandshake")
+                outbound_socket.socket.close()
+                return
+            except nacl.exceptions.CryptoError:
+                print(f"<:INh: Remote server at {outbound_socket.peer_address} failed handshake (symetric key mismatch)")
+                outbound_socket.socket.close()
+                return
         else:
             print(f"<:OUTh:found asymetric encryption object for {outbound_socket.peer_address}")  # we allready have a inbound connection to our server from this address, use the same encryption object as that conenction.
             outbound_socket.encryption = existing_socket.encryption
@@ -149,7 +170,7 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                 for peer_address in peer_address_list:
                     try:
                         ipaddress.ip_address(peer_address)
-                        self.tcp_outbound_socket_handler(peer_address)  # initiate a non peer propagating outbound handler for each supplied address, connecting us to all the peers in the voip session.
+                        self.outbound_socket_handler(peer_address)  # initiate a non peer propagating outbound handler for each supplied address, connecting us to all the peers in the voip session.
                     except ValueError: print(f"<:OUT: Bad address \"{peer_address}\" in address list, malicious peer?")
 
         else: print(f"<:OUTh:Recieved current peer address list from {outbound_socket.peer_address}, but not propagating.")
