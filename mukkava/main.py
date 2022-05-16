@@ -29,7 +29,7 @@ print(".___  ___.  __    __   __  ___  __  ___      ___   ____    ____  ___ \n"
       "|  |\/|  | |  |  |  | |    <   |    <     /  /_\  \  \      / /  /_\  \ Made by Z.Goggin\n"
       "|  |  |  | |  `--'  | |  .  \  |  .  \   /  _____  \  \    / /  _____  \ UP893303\n"
       "|__|  |__|  \______/  |__|\__\ |__|\__\ /__/     \__\  \__/ /__/     \__\ ")
-print(f"Audio settings: Blocksize - {sd.default.blocksize}BpC Samplerate - {sd.default.samplerate}Hz Channels - {sd.default.channels} (input, output)")
+print(f"Blocksize:{sd.default.blocksize}BpC Samplerate:{sd.default.samplerate}Hz Channels:{sd.default.channels}(input, output)")
 
 while True:
     choice = input("would you like to set and test your audio devices? (system defaults will be used otherwise) y/n: ")
