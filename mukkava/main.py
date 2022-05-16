@@ -5,7 +5,7 @@ MODULE PURPOSE:
     taking user input for items required to setup connection
     ensuring user input is clean and fits the application
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-MODULE NOTES:
+AUTHOR NOTES:
 N/A
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 MODULE TEST CODE:
@@ -28,7 +28,7 @@ import mukkava_socket
 print(".___  ___.  __    __   __  ___  __  ___      ___   ____    ____  ___ \n"
       "|   \/   | |  |  |  | |  |/  / |  |/  /     /   \  \   \  /   / /   \ P2P voip client\n"
       "|  \  /  | |  |  |  | |  '  /  |  '  /     /  ^  \  \   \/   / /  ^  \ ver 1.0 - 16/05/2022\n"
-      "|  |\/|  | |  |  |  | |    <   |    <     /  /_\  \  \      / /  /_\  \ Made by Z.Goggin\n"
+      "|  |\/|  | |  |  |  | |    <   |    <     /  /_\  \  \      / /  /_\  \ Made by Z.S.C.G\n"
       "|  |  |  | |  `--'  | |  .  \  |  .  \   /  _____  \  \    / /  _____  \ UP893303\n"
       "|__|  |__|  \______/  |__|\__\ |__|\__\ /__/     \__\  \__/ /__/     \__\ ")
 print(f"Blocksize:{sd.default.blocksize}BpC Samplerate:{sd.default.samplerate}Hz Channels:{sd.default.channels}(input, output)")

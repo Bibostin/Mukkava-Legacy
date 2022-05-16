@@ -4,18 +4,33 @@ MODULE PURPOSE:
     TCP Stack - for sending mukkava aplication data, and text chat securely.
         produce outbound sockets to fetch text data from other mukkava client server sockets
         produce inbound sockets from own server socket to send text data to connecting outbound sockets
-        maintain synchronisation between inbound and outbound sockets in terms of expected encryption / total amount
-
+        maintain synchronisation between inbound and outbound sockets in terms of expected encryption
+        Exception handling:
+            safely drop peers that are no longer availible
+            stop users from connecting to themselves
+            drop peers that send messages during a handshake with the wrong encryption
+        Testing files for implementing this module can be found in /testing/first_party_tests/socket_experimentation
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-MODULE NOTES:
-to be handled by outbound
-    ConnectionRefusedError:
-    timeouterror
-    connection terminated error
+AUTHOR NOTES:
+    I am certain that there is a better way of writing these handlers and proccessors, perhaps even using multiprocessing rather then threading which could have a significant
+    impact on performance / audio latency / the maximum number of viable users at a given time however I feel this is beyond the scope of the project, this example is simple, and easy
+    to understand which was a major goal for me.
+
+    the module consists of four main elements:
+        Inbound_handler - accepts incoming connections to the local server
+        Outbound_handler - sets up outbound connections to remote servers when requested to by inbound handler
+        inbound processor - Operates active inbound sockets that have been setup but the inbound handler, sends text and voice to peers
+        outbound_processor - ditto of the above but for outbound sockets, recieves and hands text and voice to mukkava_audio
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 MODULE TEST CODE:
+    Testing Mukkava socket is significantly more difficult then testing audio or encryption, because it is reliant on these two modules to function, and the overall operation
+    of the module is as a stack, the best way to test it. The individual functions and classes can be examined individually but they dont really work on their own.
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 DISSERTATION NOTES:
+Selector considerd but dropped due to inherent difference in workflow compared to select
+
+udp sockets considered but dropped due to performance overhead of performing a lookup for a encryption object against a address  (udp is connectionless so we have to examine the source
+address of EVERY incoming packet to decrypt it properly, whereas with TCP, allthough the packet sizes themselves are larger, this encryption lookup is inherent to the individual sockets.)
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 """
 import json
@@ -77,7 +92,7 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Force the OS of the system to allow the reuse of the port via socket binding without a delay
         self.server_socket.bind((socket.gethostbyname(socket.gethostname()), self.port))
         self.server_socket.listen(10)
-        print(f"<:MAIN:TCP server started on {socket.gethostbyname(socket.gethostname())}:{self.port} waiting for new connections")
+        print(f"<: MAIN:TCP server started on {socket.gethostbyname(socket.gethostname())}:{self.port} waiting for new connections")
 
         inbound_socket_handler_thread = threading.Thread(target=self.inbound_socket_handler)  # you call the function name NOT AN INSTANCE OF THE FUNCTION such as func()
         inbound_processor_thread = threading.Thread(target=self.inbound_socket_processor)
@@ -86,23 +101,26 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
         inbound_processor_thread.daemon = True
         outbound_processor_thread.daemon = True
         inbound_socket_handler_thread.start()
-        print(f"<:MAIN:TCP Inbound handler thread started")
+        print(f"<: MAIN:TCP Inbound handler thread started")
         inbound_processor_thread.start()
-        print(f"<:MAIN:TCP Inbound processor thread started")
+        print(f"<: MAIN:TCP Inbound processor thread started")
         outbound_processor_thread.start()
-        print(f"<:MAIN:TCP Outbound processor thread started")
+        print(f"<: MAIN:TCP Outbound processor thread started")
         if initial_address: self.outbound_socket_handler(initial_address, propagate_peers=True)  # if an initial address was supplied, spin up an outbound socket connecting to that address
-        while True: self.text_buffer.put(input()) # Simply loop continuously putting user input into the text buffer
+        while True:
+            text = input() # Simply loop continuously putting user input into the text buffer if sockets are availible
+            if self.sockets_info["outbound_sockets"]: self.text_buffer.put(text)
+            else: print(f"<:MAIN: Currently not connected to any other peers")
 
     def inbound_socket_handler(self):  # A handler for generating INBOUND  (server -> client) socket data streams
         while True:
             inbound_socket = PackedSocket(self.server_socket.accept()[0], self.symetric)
             inbound_socket.socket.settimeout(120)  # set the maximum ttl for a socket read, write or connect operation.
-            print(f"<:INh:Connection to local server from {inbound_socket.peer_address}")
+            print(f"<:INh: Connection to local server from {inbound_socket.peer_address}")
 
             if not (existing_socket := self.check_for_existing_socket("outbound_sockets", inbound_socket.peer_address)):
                 try:
-                    print(f"<:INh:No asymetric encryption object found for {inbound_socket.peer_address}, creating.")
+                    print(f"<:INh: No asymetric encryption object found for {inbound_socket.peer_address}, creating.")
                     asymetric_instance = mukkava_encryption.Asymetric()  # setup a new asymetric instance for this specific  quad pair of sockets
                     inbound_socket.send_data(asymetric_instance.public_encryption_key_bytes, "HDSK")
                     inbound_socket.send_data(asymetric_instance.public_verify_key_bytes, "HDSK")
@@ -120,14 +138,13 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                     continue
             else:
                 inbound_socket.encryption = existing_socket.encryption
-                print(f"<:INh:Found asymetric encryption object for {inbound_socket.peer_address}")
+                print(f"<:INh: Found asymetric encryption object for {inbound_socket.peer_address}")
                 self.sockets_info['inbound_sockets'].append(inbound_socket)  # this should only happen when a socket is ready to be used by the processor
 
             address_list = self.return_peer_address_list(inbound_socket.peer_address)
             inbound_socket.send_data(address_list, "HDSK")
-            print(f"<:INh:Sent current peer address list to {inbound_socket.peer_address}")
+            print(f"<:INh: Sent current peer address list to {inbound_socket.peer_address}")
             inbound_socket.operation_flag = True
-            inbound_socket.socket.settimeout(2)  # set the maximum ttl for a socket read, write or connect operation.
 
     def outbound_socket_handler(self, address, propagate_peers=False):  # A handler for generating OUTBOUND  (client -> server) socket data streams
         outbound_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # create a TCP socket
@@ -155,14 +172,14 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                 outbound_socket.socket.close()
                 return
         else:
-            print(f"<:OUTh:found asymetric encryption object for {outbound_socket.peer_address}")  # we allready have a inbound connection to our server from this address, use the same encryption object as that conenction.
+            print(f"<:OUTh: found asymetric encryption object for {outbound_socket.peer_address}")  # we allready have a inbound connection to our server from this address, use the same encryption object as that conenction.
             outbound_socket.encryption = existing_socket.encryption
 
         self.sockets_info['outbound_sockets'].append(outbound_socket)  # Socket setup is complete, but not ready for processor operation just yet
         peer_address_list = json.loads(outbound_socket.recieve_data()[0]) # take only the data, this should REALLY check for a HDSK message type though
 
         if propagate_peers:  # If propagate_peers is true, this is our inital outbound connection to an inital peer, so we need to act on the recieved peer address list
-            print(f"<:OUTh:Recieved current peer address list from {outbound_socket.peer_address}, propagating now.")
+            print(f"<:OUTh: Recieved current peer address list from {outbound_socket.peer_address}, propagating now.")
             if peer_address_list[0] == "no-other-peers": print(f"<:OUTh:No other peers from {outbound_socket.peer_address}")  # if the first entry in the peer_address_list is no ther peers, then we are the first client to connect to the peer.
             else:
                 if outbound_socket.local_address in peer_address_list:  # double check that the remote server hasn't sent us our own local address
@@ -175,9 +192,8 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                         self.outbound_socket_handler(peer_address)  # initiate a non peer propagating outbound handler for each supplied address, connecting us to all the peers in the voip session.
                     except ValueError: print(f"<:OUT: Bad address \"{peer_address}\" in address list, malicious peer?")
 
-        else: print(f"<:OUTh:Recieved current peer address list from {outbound_socket.peer_address}, but not propagating.")
+        else: print(f"<:OUTh: Recieved current peer address list from {outbound_socket.peer_address}, but not propagating.")
         outbound_socket.operation_flag = True # The socket is ready for operation.
-        outbound_socket.socket.settimeout(2)  # set the maximum ttl for a socket read, write or connect operation.
 
     def inbound_socket_processor(self):  # A function for taking input text and voice data from queues and sending it to all peers in the session.
         while True:

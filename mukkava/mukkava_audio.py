@@ -5,10 +5,9 @@ MODULE PURPOSE:
     Flac encoding and decoding
     Audio recording for outbound packets
     Mixing inbound packets into a single source for audio playback
-
     Testing files for implementing this module can be found in /testing/first_party_tests/sounddevice_experimentation
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-MODULE NOTES:
+AUTHOR NOTES:
     Latency = blocksize (buffer size) / sample rate nominally, this programs latency (excluding network travel time / mixing) with the current default values is 5.3ms, not bad.
     if you are not explitly setting samplerate and blocksize as I am doing above to make sd and pyflac play nice together however, you could set these values to 0 which
     tells sd to change this equation dynamically. Alternatively  #sd.default.latency = 'seconds' can be used which tells sd how many seconds sd should aim for between
@@ -104,8 +103,6 @@ def audiosetup():  # Responsible for inital audio device listing, setup and test
                 break
 
 
-
-
 class AudioInput:  # Sets up a sound device input stream & flacc encoder. instream generates input audio data, passes it to flac which encodes it, then puts it in a queue for serialisation.
     def __init__(self):
         self.instream = sd.InputStream(callback=self.instream_callback)
@@ -150,7 +147,6 @@ class AudioOutput:  # Sets up a sound device output stream & flacc decoder. take
     def process_input_callback(self):
         self.data_playback_buffer.put(sum(self.data_mixing_array))  #Sum all of our numpy arrays (if there are multiple) together to get a mixed source.
         self.data_mixing_array.clear()  # Flush the mixing array for new data.
-
 
     def outstream_callback(self, outdata, frames, sd_time, status):  # called by outstream to fetch new audio data autonmously from the above, if data is present in the playback buffer, its fed into the outputstream.
         if not self.data_playback_buffer.empty():

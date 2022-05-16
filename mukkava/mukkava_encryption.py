@@ -6,7 +6,7 @@ MODULE PURPOSE:
     asymetric encoding / decoding of voip and text buffer data prior to and post transmission respectively
     digital signature production and verification to validate source of packets / tampering
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-MODULE NOTES:
+AUTHOR NOTES:
     Creating a encryption algorithm / solution from scratch is incredibly, INCREDIBLEY difficult to get right, and even a single failure or misunderstanding when implementing an
     aspect of your solution can result in a catastrophy, as a non specialised developer I opted to specifically use pynacl here mostly because I trust the makers of it
     and I also trust the creator of the original nacl library. the solution bellow may seem incredibly simple, but there is a large amount of steps hidden away by PyNacl
