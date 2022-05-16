@@ -44,7 +44,7 @@ class PackedSocket:  # A class that takes a socket object, and packages informat
         self.peer_address = socket_object.getpeername()[0]  # store the peer address of the socket in a easier to reach location
         self.audio_out_buffer_instance = audio_out.add_queue() # add a queue for adding voice data to from outbound sockets, this is mixed by
         self.operation_flag = False  # A flag for stopping race conditions that create issues between the TCP handlers and active TCP processors, set to True when a socket is ready for processing.
-
+        self.shutdown_flag = False  # A flag for signalling between the two processors, that the Connection has been terminated and the socket must be closed.
 
     def fileno(self):  # Select and Selector both require this behaviour from objects to function properly
         return self.socket.fileno()
@@ -97,6 +97,7 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
     def inbound_socket_handler(self):  # A handler for generating INBOUND  (server -> client) socket data streams
         while True:
             inbound_socket = PackedSocket(self.server_socket.accept()[0], self.symetric)
+            inbound_socket.socket.settimeout(120)  # set the maximum ttl for a socket read, write or connect operation.
             print(f"<:INh:Connection to local server from {inbound_socket.peer_address}")
 
             if not (existing_socket := self.check_for_existing_socket("outbound_sockets", inbound_socket.peer_address)):
@@ -126,6 +127,7 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
             inbound_socket.send_data(address_list, "HDSK")
             print(f"<:INh:Sent current peer address list to {inbound_socket.peer_address}")
             inbound_socket.operation_flag = True
+            inbound_socket.socket.settimeout(2)  # set the maximum ttl for a socket read, write or connect operation.
 
     def outbound_socket_handler(self, address, propagate_peers=False):  # A handler for generating OUTBOUND  (client -> server) socket data streams
         outbound_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # create a TCP socket
@@ -175,11 +177,13 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
 
         else: print(f"<:OUTh:Recieved current peer address list from {outbound_socket.peer_address}, but not propagating.")
         outbound_socket.operation_flag = True # The socket is ready for operation.
+        outbound_socket.socket.settimeout(2)  # set the maximum ttl for a socket read, write or connect operation.
 
     def inbound_socket_processor(self):  # A function for taking input text and voice data from queues and sending it to all peers in the session.
         while True:
             if self.sockets_info["inbound_sockets"]:  # if INBOUND sockets are present
                 if not audio_in.instream.active: audio_in.instream.start()  # if the audio input (mic out) stream isn't active start it.
+
                 if not audio_in.data_buffer.empty(): voice_data = audio_in.data_buffer.get()  # if the audio buffer isn't empty fetch some voice data
                 else: voice_data = False
 
@@ -188,19 +192,17 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
 
                 _, writable_sockets, _ = select.select([], self.sockets_info["inbound_sockets"], [])
                 for inbound_socket in writable_sockets:
-                    if inbound_socket.operation_flag:  # if the handler has finished setting up the socket (and its not still in handshake)
-                        try:
+                    try:
+                        if inbound_socket.shutdown_flag: raise ConnectionError  # Check to see if the peer processor has signaled to shut this socket down
+                        if inbound_socket.operation_flag:  # if the handler has finished setting up the socket (and its not still in handshake)
                             if voice_data: inbound_socket.send_data(voice_data, "VOIP")  # if we have voice data, send it
                             if text_data: inbound_socket.send_data(text_data, "TEXT")  # if we have text data, send it
-                        except OSError: continue  # if we encounter an error due to the other processor closing a socket we are atttempting to use ignore it.
-                        except ConnectionError:
-                            print(f"<:INp: Connection to {inbound_socket.peer_address} dropped, closing local end of connection")
-                            outbound_socket = self.check_for_existing_socket("outbound_sockets", inbound_socket.peer_address)
-                            inbound_socket.socket.close()
-                            outbound_socket.socket.close()
-                            del outbound_socket.audio_out_buffer_instance
-                            self.sockets_info["inbound_sockets"].remove(inbound_socket)
-                            self.sockets_info["outbound_sockets"].remove(outbound_socket)
+                    except ConnectionError:
+                        print(f"<:INp: Connection to {inbound_socket.peer_address} dropped, closing local end of connection")
+                        outbound_socket = self.check_for_existing_socket("outbound_sockets", inbound_socket.peer_address)  # fetch the peer processors socket
+                        if outbound_socket: outbound_socket.shutdown_flag = True  # if a socket was returned (I.E this thread caught the exception first) set its shutdown flag to true
+                        inbound_socket.socket.close()  # close this processors socket fully
+                        self.sockets_info["inbound_sockets"].remove(inbound_socket)  # remove it from the inbound socket pool
 
             else: audio_in.instream.stop()  # there are no inbound sockets, so stop the audio input stream
 
@@ -209,27 +211,24 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
         while True:
             if self.sockets_info["outbound_sockets"]: # if there are OUTBOUND sockets present
                 if not audio_out.outstream.active: audio_out.outstream.start()  # Start the audio output stream if it isn't active
+
                 readable_sockets, _, _ = select.select(self.sockets_info["outbound_sockets"], [], [], 5)
                 for outbound_socket in readable_sockets:
-                    if outbound_socket.operation_flag:
-
-                        try:
+                    try:
+                        if outbound_socket.shutdown_flag: raise ConnectionError  # Check to see if the peer processor has signaled to shut this socket down
+                        if outbound_socket.operation_flag:
                             data, message_type = outbound_socket.recieve_data()
                             if message_type == "TEXT": print(f"<:OUTp:{outbound_socket.peer_address}:{data}")
                             elif message_type == "VOIP": outbound_socket.audio_out_buffer_instance.put(data)
-                        except nacl.exceptions.CryptoError: continue  # If we encounter a buffer overflow due to a difference in processing speed  ignore it.
-                        except OSError: continue  # if we encounter an error due to the other processor closing a socket we are atttempting to use ignore it.
-                        except ConnectionError:
-                            print(f"<:OUTp: Connection to {outbound_socket.peer_address} dropped, closing local end of connection")
-                            inbound_socket = self.check_for_existing_socket("inbound_sockets", outbound_socket.peer_address)
-                            inbound_socket.socket.close()
-                            outbound_socket.socket.close()
-                            del outbound_socket.audio_out_buffer_instance
-                            self.sockets_info["inbound_sockets"].remove(inbound_socket)
-                            self.sockets_info["outbound_sockets"].remove(outbound_socket)
+                    except nacl.exceptions.CryptoError: continue  # If we encounter a buffer overflow due to a difference in processing speed  ignore it.
+                    except ConnectionError:
+                        print(f"<:OUTp: Connection to {outbound_socket.peer_address} dropped, closing local end of connection")
+                        inbound_socket = self.check_for_existing_socket("inbound_sockets", outbound_socket.peer_address)  # fetch the peer processors socket
+                        if inbound_socket: inbound_socket.shutdown_flag = True  # if a socket was returned (I.E this thread caught the exception first) set its shutdown flag to true
+                        outbound_socket.socket.close()  # close this processors socket fully
+                        del outbound_socket.audio_out_buffer_instance  # remove its mixing buffer to increase performance
+                        self.sockets_info["outbound_sockets"].remove(outbound_socket)  # remove it from the pool of active outbound sockets
 
-                audio_out.process_input()  # mix all the audio data we recieved from the readable sockets into one numpy array
-            else:audio_out.outstream.stop()  # there are no outbound sockets, so stop the audio output stream
 
 
     def check_for_existing_socket(self, inbound_or_outbound, peer_address):  # A function for evaluating whether any existing sockets are connected to or originate from the specified address
@@ -246,3 +245,15 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
             address_list.remove(receiving_peer_address)  # Ensure the address of the peer is not in the sent list (this is checked client side too)
         else: address_list.append("no-other-peers")  # The peer is currently our only connection
         return json.dumps(address_list)  # serialise the list in  quick and secure format for interpritation by the other client.
+
+    def delete_socket_pair(self, peer_address):
+        if (outbound_socket := self.check_for_existing_socket("outbound_sockets", peer_address)):
+            outbound_socket.socket.close()
+            del outbound_socket.audio_out_buffer_instance
+            self.sockets_info["outbound_sockets"].remove(outbound_socket)
+
+        if (inbound_socket := self.check_for_existing_socket("inbound_sockets", peer_address)):
+            inbound_socket.socket.close()
+            self.sockets_info["inbound_socket"].remove(inbound_socket)
+
+
