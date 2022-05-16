@@ -192,6 +192,7 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                         try:
                             if voice_data: inbound_socket.send_data(voice_data, "VOIP")  # if we have voice data, send it
                             if text_data: inbound_socket.send_data(text_data, "TEXT")  # if we have text data, send it
+                        except OSError: continue  # if we encounter an error due to the other processor closing a socket we are atttempting to use ignore it.
                         except ConnectionError:
                             print(f"<:INp: Connection to {inbound_socket.peer_address} dropped, closing local end of connection")
                             outbound_socket = self.check_for_existing_socket("outbound_sockets", inbound_socket.peer_address)
@@ -216,7 +217,8 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                             data, message_type = outbound_socket.recieve_data()
                             if message_type == "TEXT": print(f"<:OUTp:{outbound_socket.peer_address}:{data}")
                             elif message_type == "VOIP": outbound_socket.audio_out_buffer_instance.put(data)
-                        except nacl.exceptions.CryptoError: continue  # If we encounter a buffer overflow due to a difference in processing speed, simply ignore it.
+                        except nacl.exceptions.CryptoError: continue  # If we encounter a buffer overflow due to a difference in processing speed  ignore it.
+                        except OSError: continue  # if we encounter an error due to the other processor closing a socket we are atttempting to use ignore it.
                         except ConnectionError:
                             print(f"<:OUTp: Connection to {outbound_socket.peer_address} dropped, closing local end of connection")
                             inbound_socket = self.check_for_existing_socket("inbound_sockets", outbound_socket.peer_address)
