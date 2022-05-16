@@ -194,8 +194,12 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                             if text_data: inbound_socket.send_data(text_data, "TEXT")  # if we have text data, send it
                         except ConnectionError:
                             print(f"<:INp: Connection to {inbound_socket.peer_address} dropped, closing local end of connection")
+                            outbound_socket = self.check_for_existing_socket("outbound_sockets", inbound_socket.peer_address)
                             inbound_socket.socket.close()
+                            outbound_socket.socket.close()
+                            del outbound_socket.audio_out_buffer_instance
                             self.sockets_info["inbound_sockets"].remove(inbound_socket)
+                            self.sockets_info["outbound_sockets"].remove(outbound_socket)
 
             else: audio_in.instream.stop()  # there are no inbound sockets, so stop the audio input stream
 
@@ -214,9 +218,12 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                             elif message_type == "VOIP": outbound_socket.audio_out_buffer_instance.put(data)
                         except nacl.exceptions.CryptoError: continue  # If we encounter a buffer overflow due to a difference in processing speed, simply ignore it.
                         except ConnectionError:
-                            print(f"<:INp: Connection to {outbound_socket.peer_address} dropped, closing local end of connection")
+                            print(f"<:OUTp: Connection to {outbound_socket.peer_address} dropped, closing local end of connection")
+                            inbound_socket = self.check_for_existing_socket("inbound_sockets", outbound_socket.peer_address)
+                            inbound_socket.socket.close()
                             outbound_socket.socket.close()
                             del outbound_socket.audio_out_buffer_instance
+                            self.sockets_info["inbound_sockets"].remove(inbound_socket)
                             self.sockets_info["outbound_sockets"].remove(outbound_socket)
 
                 audio_out.process_input()  # mix all the audio data we recieved from the readable sockets into one numpy array
