@@ -230,7 +230,6 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                         self.sockets_info["outbound_sockets"].remove(outbound_socket)  # remove it from the pool of active outbound sockets
 
 
-
     def check_for_existing_socket(self, inbound_or_outbound, peer_address):  # A function for evaluating whether any existing sockets are connected to or originate from the specified address
         for packed_socket in self.sockets_info[inbound_or_outbound]:  # for all the packed sockets in whichever socket type dictionary was specified
             if peer_address  == packed_socket.peer_address:  # check is equal
@@ -245,15 +244,4 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
             address_list.remove(receiving_peer_address)  # Ensure the address of the peer is not in the sent list (this is checked client side too)
         else: address_list.append("no-other-peers")  # The peer is currently our only connection
         return json.dumps(address_list)  # serialise the list in  quick and secure format for interpritation by the other client.
-
-    def delete_socket_pair(self, peer_address):
-        if (outbound_socket := self.check_for_existing_socket("outbound_sockets", peer_address)):
-            outbound_socket.socket.close()
-            del outbound_socket.audio_out_buffer_instance
-            self.sockets_info["outbound_sockets"].remove(outbound_socket)
-
-        if (inbound_socket := self.check_for_existing_socket("inbound_sockets", peer_address)):
-            inbound_socket.socket.close()
-            self.sockets_info["inbound_socket"].remove(inbound_socket)
-
 
