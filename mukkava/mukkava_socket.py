@@ -110,7 +110,7 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                     self.sockets_info['inbound_sockets'].append(inbound_socket)  # unlike the outbound_handler, we cant handle for appending the packedsocket object to sock_info as a statement after the if else check for an existing socket as the inbound check calls a instance of outbound handler that NEEDS to know about this socket
                     self.outbound_socket_handler(inbound_socket.peer_address)  # if address isn't in self.sockets_info["outbound_sockets] we do not have a client going to the opposing server and must create one.
                 except ConnectionResetError:
-                    print(f"<:INh: connection from {inbound_socket.peer_address} dropped midhandshake")
+                    print(f"<:INh: connection from {inbound_socket.peer_address} dropped midhanshake (symetric key mismatch or connection loss)")
                     inbound_socket.socket.close()
                     continue
                 except nacl.exceptions.CryptoError:
@@ -145,7 +145,7 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                 outbound_socket.send_data(asymetric_instance.public_verify_key_bytes, "HDSK")
                 outbound_socket.encryption = asymetric_instance
             except ConnectionResetError:
-                print(f"<:OUTh: Remote server at {outbound_socket.peer_address} dropped connection midhandshake")
+                print(f"<:OUTh: Remote server at {outbound_socket.peer_address} dropped midhanshake (symetric key mismatch or connection loss)")
                 outbound_socket.socket.close()
                 return
             except nacl.exceptions.CryptoError:
@@ -189,8 +189,14 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                 _, writable_sockets, _ = select.select([], self.sockets_info["inbound_sockets"], [])
                 for inbound_socket in writable_sockets:
                     if inbound_socket.operation_flag:  # if the handler has finished setting up the socket (and its not still in handshake)
-                        if voice_data: inbound_socket.send_data(voice_data, "VOIP")  # if we have voice data, send it
-                        if text_data: inbound_socket.send_data(text_data, "TEXT")  # if we have text data, send it
+                        try:
+                            if voice_data: inbound_socket.send_data(voice_data, "VOIP")  # if we have voice data, send it
+                            if text_data: inbound_socket.send_data(text_data, "TEXT")  # if we have text data, send it
+                        except ConnectionAbortedError:
+                            print(f"<:INp: Connection to {inbound_socket.peer_address} dropped, closing local end of connection")
+                            inbound_socket.socket.close()
+                            self.sockets_info["inbound_sockets"].remove(inbound_socket)
+
             else: audio_in.instream.stop()  # there are no inbound sockets, so stop the audio input stream
 
 
@@ -201,10 +207,16 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                 readable_sockets, _, _ = select.select(self.sockets_info["outbound_sockets"], [], [], 5)
                 for outbound_socket in readable_sockets:
                     if outbound_socket.operation_flag:
-                        try: data, message_type = outbound_socket.recieve_data()
+
+                        try:
+                            data, message_type = outbound_socket.recieve_data()
+                            if message_type == "TEXT": print(f"<:OUTp:{outbound_socket.peer_address}:{data}")
+                            elif message_type == "VOIP": outbound_socket.audio_out_buffer_instance.put(data)
                         except nacl.exceptions.CryptoError: continue  # If we encounter a buffer overflow due to a difference in processing speed, simply ignore it.
-                        if message_type == "TEXT": print(f"<:OUTp:{outbound_socket.peer_address}:{data}")
-                        elif message_type == "VOIP": outbound_socket.audio_out_buffer_instance.put(data)
+                        except ConnectionAbortedError:
+                            print(f"<:INp: Connection to {outbound_socket.peer_address} dropped, closing local end of connection")
+                            outbound_socket.socket.close()
+                            self.sockets_info["outbound_sockets"].remove(outbound_socket)
                 audio_out.process_input()  # mix all the audio data we recieved from the readable sockets into one numpy array
             else:audio_out.outstream.stop()  # there are no outbound sockets, so stop the audio output stream
 
