@@ -242,6 +242,8 @@ class NetStack:  # IPv4 TCP Socket stack for receiving text and command packets
                         outbound_socket.socket.close()  # close this processors socket fully
                         del outbound_socket.audio_out_buffer_instance  # remove its mixing buffer to increase performance
                         self.sockets_info["outbound_sockets"].remove(outbound_socket)  # remove it from the pool of active outbound sockets
+                audio_out.process_input()
+            else: audio_out.outstream.stop()
 
 
     def check_for_existing_socket(self, inbound_or_outbound, peer_address):  # A function for evaluating whether any existing sockets are connected to or originate from the specified address
